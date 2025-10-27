@@ -6,16 +6,18 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:54:32 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/27 19:16:36 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/27 21:00:36 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ft_ping.h"
 
+t_ft_ping	*g_ft_ping = NULL;
 
 int	init_socket(void)
 {
-	int	raw_socket;
+	int				raw_socket;
+	struct timeval	timeout;
 
 	raw_socket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 	if (raw_socket <= 0)
@@ -24,7 +26,14 @@ int	init_socket(void)
 		fprintf(stderr, "Hint: raw sockets require root privileges\n");
 		exit (1);
 	}
-	// TODO: implement timeout
+	timeout.tv_sec = SOCKET_TIMEOUT;
+	timeout.tv_usec = 0;
+	if (setsockopt(raw_socket, SOL_SOCKET, SO_RCVTIMEO, 
+			&timeout, sizeof(timeout)) < 0)
+	{
+		perror("socket");
+		exit (1);
+	}
 	return (raw_socket);
 }
 
@@ -85,14 +94,15 @@ int	send_packet(int sock, uint8_t *sendbuffer, struct sockaddr_in *addr)
 	return (bytes);
 }
 
-int	receive_packet(int sock, uint8_t *recvbuffer, struct sockaddr_in *reply_addr)
+int	receive_packet(int sock, uint8_t *recvbuffer, size_t bufsize, 
+		struct sockaddr_in *reply_addr)
 {
 	int	bytes;
 
-	memset(reply_addr, 0, sizeof(*reply_addr));
 	socklen_t reply_addr_len = sizeof(*reply_addr);
-	bytes = recvfrom(sock, recvbuffer, PACKET_SIZE, 0, 
-				(struct sockaddr *) &reply_addr, &reply_addr_len);
+	memset(reply_addr, 0, reply_addr_len);
+	bytes = recvfrom(sock, recvbuffer, bufsize, 0, 
+				(struct sockaddr *) reply_addr, &reply_addr_len);
 	return (bytes);
 }
 
@@ -102,11 +112,10 @@ void	process_packet(int bytes, t_ft_ping *app)
 	t_ip_header		*ip_header;
 	t_icmp_header	*icmp_header;
 	
-	gettimeofday(&app->end, NULL);
 	ip_header = (t_ip_header*) app->recvbuffer;
 	offset = ip_header->ihl * 4;
 	icmp_header = (struct icmphdr *)(app->recvbuffer + offset);
-	print_icmp((uint8_t *)icmp_header, bytes - offset);
+	// print_icmp((uint8_t *)icmp_header, bytes - offset);
 	if (icmp_header->type == ICMP_ECHOREPLY && 
 		icmp_header->un.echo.id == app->pid) // TODO: save pid in app
 	{
@@ -129,23 +138,41 @@ int	ping_loop(int sock, t_ft_ping *app)
 	{
 		// Prepare packet
 		memset(payload, 0x42, PAYLOAD_SIZE);
+		memset(&app->start, 0, sizeof(app->start));
+		memset(&app->end, 0, sizeof(app->end));
 		prepare_echo_request_packet(payload, PAYLOAD_SIZE, app->sendbuffer, 
 				app->sent_packets++, app->pid);
 		// print_bytes(app->sendbuffer, PACKET_SIZE);
 		gettimeofday(&app->start, NULL);
-		bytes = send_packet(sock, app->sendbuffer, &app->dest_addr);
-		if (bytes < 0)
+		if (send_packet(sock, app->sendbuffer, &app->dest_addr) < 0)
 			continue;
-		bytes = receive_packet(sock, app->recvbuffer, &app->reply_addr);
+		bytes = receive_packet(sock, app->recvbuffer, sizeof(app->recvbuffer),
+				&app->reply_addr);
+		gettimeofday(&app->end, NULL);
 		if (bytes < 0)
 			perror("recvfrom");
 		else
-		{
 			process_packet(bytes, app);
-		}
 		sleep(1);
 	}
 	return (0);
+}
+
+void	interrupt(int signum)
+{
+	(void) signum;
+	float	loss;
+	
+	loss = 0.0;
+	if (g_ft_ping->sent_packets > 0)
+		loss = 100 - (g_ft_ping->rcv_packets * 100 / g_ft_ping->sent_packets);
+	printf("--- %s ping statistics ---\n", g_ft_ping->dest);
+	printf("%d packets transmitted, %d packets received, %.1f%% packet loss\n",
+		g_ft_ping->sent_packets, g_ft_ping->rcv_packets, loss);
+	if (g_ft_ping->socket >= 0)
+		close(g_ft_ping->socket);
+	g_ft_ping = NULL;
+	exit (0);
 }
 
 int	main(int ac, char **av)
@@ -153,6 +180,7 @@ int	main(int ac, char **av)
 	uint32_t			dest_ip;
 	t_ft_ping			app;
 
+	g_ft_ping = &app;
 	memset(&app, 0, sizeof(app));
 	parse_args(ac, av, &app);
 	// TODO: resolve through DNS
@@ -163,12 +191,11 @@ int	main(int ac, char **av)
 	}
 	setup_destination(&app, dest_ip);
 	app.socket = init_socket();
-	// print_addr(&dest);
-	printf("raw_socket: %d\n", app.socket);
 	printf("PING %s (%s): %d data bytes\n",
 		av[1],
 		app.dest,
 		PACKET_SIZE
 		);
+	signal(SIGINT, interrupt);
 	return (ping_loop(app.socket, &app));
 }

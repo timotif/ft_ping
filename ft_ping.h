@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/27 19:12:26 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/27 21:03:20 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,10 +24,14 @@
 # include <netinet/ip.h>
 # include <sys/time.h>
 # include <stdbool.h>
+# include <signal.h>
 # include <assert.h>
 
 # define PAYLOAD_SIZE PACKET_SIZE - 8
 # define PACKET_SIZE 64
+# define SOCKET_TIMEOUT 3
+# define MAX_IP_HEADER_SIZE 60
+# define RECV_BUFFER_SIZE (PACKET_SIZE + MAX_IP_HEADER_SIZE)
 
 typedef struct icmphdr	t_icmp_header;
 typedef struct iphdr	t_ip_header;
@@ -45,10 +49,13 @@ typedef struct s_ft_ping
 	struct timeval		start;
 	struct timeval		end;
 	uint8_t				sendbuffer[PACKET_SIZE];  		// ICMP header + payload
-	uint8_t				recvbuffer[PACKET_SIZE + 20]; 	// received packet
+	uint8_t				recvbuffer[RECV_BUFFER_SIZE]; 	// received packet
 	struct sockaddr_in	dest_addr;              		// destination address
 	struct sockaddr_in	reply_addr;             		// address from last reply
 }	t_ft_ping;
+
+/***** GLOBAL *****/
+extern t_ft_ping	*g_ft_ping;
 
 /***** PARSE *****/
 void	parse_args(int ac, char **av, t_ft_ping *app);
