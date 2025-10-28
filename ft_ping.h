@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/28 17:41:05 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/28 18:00:41 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,6 +68,29 @@ void		print_ip(uint8_t *buffer, uint32_t total_bytes);
 void		print_usage(char *prog_name);
 void		print_addr(struct sockaddr_in *addr);
 long long	elapsed_time(struct timeval start, struct timeval end);
+
+/***** PACKET *****/
+void		prepare_echo_request_packet(void *payload, size_t payload_len, 
+			uint8_t *sendbuffer, int seq, pid_t pid);
+uint32_t	calculate_checksum(uint16_t *data, uint32_t len);
+int			send_packet(int sock, uint8_t *sendbuffer,
+			struct sockaddr_in *addr);
+int			receive_packet(int sock, uint8_t *recvbuffer, size_t bufsize,
+			struct sockaddr_in *reply_addr, uint16_t sequence);
+void		process_packet(int bytes, t_ft_ping *app);
+
+/***** PING *****/
+void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header, 
+			int bytes, t_ft_ping *app);
+void	ping_success(t_ip_header *ip_header, t_icmp_header *icmp_header, 
+			int bytes, t_ft_ping *app);
+int		ping_loop(int sock, t_ft_ping *app);
+
+/***** IP *****/
+char	*ip_get_source_addr(t_ip_header *ip_header);
+
+/***** ICMP *****/
+uint16_t	icmp_get_sequence(t_icmp_header *icmp_header);
 
 uint16_t	buffer_get_sequence(uint8_t *buffer, int len);
 #endif

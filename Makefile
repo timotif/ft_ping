@@ -1,4 +1,4 @@
-SRC = ft_ping.c parse.c utils.c
+SRC = ft_ping.c parse.c packet.c ping.c ip.c icmp.c utils.c
 OBJ = $(SRC:.c=.o)
 CC = gcc
 CFLAGS = -Wall -Wextra -Werror
