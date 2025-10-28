@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:54:32 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/28 16:39:07 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/28 17:44:41 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,7 +58,7 @@ uint32_t	calculate_checksum(uint16_t *data, uint32_t len)
 		len -= 2;
 	}
 	if (len > 0)
-		sum += *(uint8_t*)data;
+		sum += *(uint8_t *)data;
 	while (sum >> 16)
 		sum = (sum & 0xffff) + (sum >> 16);
 	return (~sum);
@@ -95,14 +95,20 @@ int	send_packet(int sock, uint8_t *sendbuffer, struct sockaddr_in *addr)
 }
 
 int	receive_packet(int sock, uint8_t *recvbuffer, size_t bufsize, 
-		struct sockaddr_in *reply_addr)
+		struct sockaddr_in *reply_addr, uint16_t sequence)
 {
-	int	bytes;
+	int			bytes;
+	socklen_t	reply_addr_len;
 
-	socklen_t reply_addr_len = sizeof(*reply_addr);
-	memset(reply_addr, 0, reply_addr_len);
-	bytes = recvfrom(sock, recvbuffer, bufsize, 0, 
-				(struct sockaddr *) reply_addr, &reply_addr_len);
+	while (1)
+	{
+		reply_addr_len = sizeof(*reply_addr);
+		memset(reply_addr, 0, reply_addr_len);
+		bytes = recvfrom(sock, recvbuffer, bufsize, 0, 
+			(struct sockaddr *) reply_addr, &reply_addr_len);
+		if (sequence == buffer_get_sequence(recvbuffer, bufsize) || bytes < 0)
+			break ;
+	}
 	return (bytes);
 }
 
@@ -114,7 +120,7 @@ char	*ip_get_source_addr(t_ip_header *ip_header)
 	return (inet_ntoa(addr));
 }
 
-uint16_t	get_sequence(t_icmp_header *icmp_header)
+uint16_t	icmp_get_sequence(t_icmp_header *icmp_header)
 {
 	return (ntohs(icmp_header->un.echo.sequence));
 }
@@ -129,7 +135,7 @@ void	ping_success(t_ip_header *ip_header, t_icmp_header *icmp_header,
 	/* 64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.022 ms */
 	printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%lld.%03lld ms\n",
 		bytes, ip_get_source_addr(ip_header), 
-		get_sequence(icmp_header), 
+		icmp_get_sequence(icmp_header), 
 		ip_header->ttl, time / 1000, time % 1000);	
 }
 
@@ -143,7 +149,7 @@ void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header,
 			if (ntohs(icmp_header->un.echo.id) == app->pid)
 				printf("From %s icmp_seq=%d Destination Unreachable\n",
 					ip_get_source_addr(ip_header), 
-					get_sequence(icmp_header));
+					icmp_get_sequence(icmp_header));
 			else
 				app->sent_packets--;
 			break;
@@ -171,8 +177,22 @@ void	process_packet(int bytes, t_ft_ping *app)
 	else
 	{
 		ping_fail(ip_header, icmp_header, bytes, app);
-		print_ip(app->recvbuffer, bytes);
+		// print_ip(app->recvbuffer, bytes);
 	}
+}
+
+uint16_t	buffer_get_sequence(uint8_t *buffer, int len)
+{
+	t_ip_header		*ip_header;
+	t_icmp_header	*icmp_header;
+	int				offset;
+	
+	if (!buffer || !len)
+		return (0);
+	ip_header = (t_ip_header *)buffer;
+	offset = ip_header->ihl * 4;
+	icmp_header = (t_icmp_header *)(buffer + offset);
+	return (icmp_get_sequence(icmp_header));
 }
 
 int	ping_loop(int sock, t_ft_ping *app)
@@ -180,6 +200,7 @@ int	ping_loop(int sock, t_ft_ping *app)
 	char	payload[PAYLOAD_SIZE];
 	int		bytes;
 
+	bytes = 0;
 	app->pid = getpid();
 	printf("PID: %d\n", app->pid);
 	while (1)
@@ -189,13 +210,14 @@ int	ping_loop(int sock, t_ft_ping *app)
 		memset(&app->start, 0, sizeof(app->start));
 		memset(&app->end, 0, sizeof(app->end));
 		prepare_echo_request_packet(payload, PAYLOAD_SIZE, app->sendbuffer, 
-				app->sent_packets++, app->pid);
+				++app->sequence, app->pid);
 		// print_bytes(app->sendbuffer, PACKET_SIZE, "SEND BUFFER");
 		gettimeofday(&app->start, NULL);
 		if (send_packet(sock, app->sendbuffer, &app->dest_addr) < 0)
 			continue;
+		app->sent_packets++;
 		bytes = receive_packet(sock, app->recvbuffer, sizeof(app->recvbuffer),
-				&app->reply_addr);
+				&app->reply_addr, app->sequence);
 		gettimeofday(&app->end, NULL);
 		if (bytes < 0)
 		{

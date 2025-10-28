@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/28 16:36:08 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/28 17:41:05 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@
 
 # define PAYLOAD_SIZE PACKET_SIZE - 8
 # define PACKET_SIZE 64
-# define SOCKET_TIMEOUT 3
+# define SOCKET_TIMEOUT 1
 # define MAX_IP_HEADER_SIZE 60
 # define RECV_BUFFER_SIZE (PACKET_SIZE + MAX_IP_HEADER_SIZE)
 
@@ -69,4 +69,5 @@ void		print_usage(char *prog_name);
 void		print_addr(struct sockaddr_in *addr);
 long long	elapsed_time(struct timeval start, struct timeval end);
 
+uint16_t	buffer_get_sequence(uint8_t *buffer, int len);
 #endif
