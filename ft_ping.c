@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:54:32 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/27 21:00:36 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/28 16:39:07 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,8 +75,8 @@ void	prepare_echo_request_packet(void *payload, size_t payload_len,
 	packet = (t_icmp_header*) sendbuffer;
 	packet->type = ICMP_ECHO; // 8
 	packet->code = 0;
-	packet->un.echo.id = pid;
-	packet->un.echo.sequence = seq;
+	packet->un.echo.id = htons(pid);
+	packet->un.echo.sequence = htons(seq);
 	memcpy(sendbuffer + sizeof(t_icmp_header), payload, payload_len);
 	assert(packet->checksum == 0);
 	packet->checksum = 0;
@@ -106,6 +106,52 @@ int	receive_packet(int sock, uint8_t *recvbuffer, size_t bufsize,
 	return (bytes);
 }
 
+char	*ip_get_source_addr(t_ip_header *ip_header)
+{
+	struct in_addr addr;
+
+	addr.s_addr = ip_header->saddr;
+	return (inet_ntoa(addr));
+}
+
+uint16_t	get_sequence(t_icmp_header *icmp_header)
+{
+	return (ntohs(icmp_header->un.echo.sequence));
+}
+
+void	ping_success(t_ip_header *ip_header, t_icmp_header *icmp_header, 
+		int bytes, t_ft_ping *app)
+{
+	long long	time;
+	
+	app->rcv_packets++;
+	time = elapsed_time(app->start, app->end);
+	/* 64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.022 ms */
+	printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%lld.%03lld ms\n",
+		bytes, ip_get_source_addr(ip_header), 
+		get_sequence(icmp_header), 
+		ip_header->ttl, time / 1000, time % 1000);	
+}
+
+void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header, 
+		int bytes, t_ft_ping *app)
+{
+	(void) bytes;
+	switch (icmp_header->type)
+	{
+		case ICMP_DEST_UNREACH:
+			if (ntohs(icmp_header->un.echo.id) == app->pid)
+				printf("From %s icmp_seq=%d Destination Unreachable\n",
+					ip_get_source_addr(ip_header), 
+					get_sequence(icmp_header));
+			else
+				app->sent_packets--;
+			break;
+		default:
+			break;
+	}
+}
+
 void	process_packet(int bytes, t_ft_ping *app)
 {
 	int				offset;
@@ -116,15 +162,16 @@ void	process_packet(int bytes, t_ft_ping *app)
 	offset = ip_header->ihl * 4;
 	icmp_header = (struct icmphdr *)(app->recvbuffer + offset);
 	// print_icmp((uint8_t *)icmp_header, bytes - offset);
-	if (icmp_header->type == ICMP_ECHOREPLY && 
-		icmp_header->un.echo.id == app->pid) // TODO: save pid in app
+	// print_ip(app->recvbuffer, bytes);
+	if (icmp_header->type == ICMP_ECHOREPLY)
 	{
-		app->rcv_packets++;
-		time_t time = elapsed_time(app->start, app->end);
-		/* 64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.022 ms */
-		printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%ld.%03lu ms\n",
-			bytes, inet_ntoa(app->reply_addr.sin_addr), icmp_header->un.echo.sequence, 
-			ip_header->ttl, time / 1000, time % 1000);
+		if (ntohs(icmp_header->un.echo.id) == app->pid)
+		ping_success(ip_header, icmp_header, bytes, app);
+	} 
+	else
+	{
+		ping_fail(ip_header, icmp_header, bytes, app);
+		print_ip(app->recvbuffer, bytes);
 	}
 }
 
@@ -133,7 +180,8 @@ int	ping_loop(int sock, t_ft_ping *app)
 	char	payload[PAYLOAD_SIZE];
 	int		bytes;
 
-	app->pid = getpid() & 0xffff;
+	app->pid = getpid();
+	printf("PID: %d\n", app->pid);
 	while (1)
 	{
 		// Prepare packet
@@ -142,7 +190,7 @@ int	ping_loop(int sock, t_ft_ping *app)
 		memset(&app->end, 0, sizeof(app->end));
 		prepare_echo_request_packet(payload, PAYLOAD_SIZE, app->sendbuffer, 
 				app->sent_packets++, app->pid);
-		// print_bytes(app->sendbuffer, PACKET_SIZE);
+		// print_bytes(app->sendbuffer, PACKET_SIZE, "SEND BUFFER");
 		gettimeofday(&app->start, NULL);
 		if (send_packet(sock, app->sendbuffer, &app->dest_addr) < 0)
 			continue;
@@ -150,7 +198,13 @@ int	ping_loop(int sock, t_ft_ping *app)
 				&app->reply_addr);
 		gettimeofday(&app->end, NULL);
 		if (bytes < 0)
-			perror("recvfrom");
+		{
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				printf("Request timeout for icmp_seq=%d\n", 
+					app->sent_packets--);
+			else
+				perror("recvfrom");
+		}
 		else
 			process_packet(bytes, app);
 		sleep(1);
