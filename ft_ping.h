@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/29 17:29:06 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/29 18:41:56 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,6 +76,10 @@ extern t_ft_ping	*g_ft_ping;
 /***** PARSE *****/
 void	parse_args(int ac, char **av, t_ft_ping *app);
 void	parse_flag(char *flag, t_ft_ping *app, char *prog_name);
+
+/***** SOCKET *****/
+int		init_socket(void);
+int		set_socket_options(int raw_socket);
 
 /***** UTILS *****/
 void		print_bytes(uint8_t *bytes, size_t len, char *header);
