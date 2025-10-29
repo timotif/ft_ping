@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/28 18:00:41 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/29 16:04:46 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,9 +62,9 @@ void	parse_args(int ac, char **av, t_ft_ping *app);
 void	parse_flag(char *flag, t_ft_ping *app, char *prog_name);
 
 /***** UTILS *****/
-void		print_bytes(uint8_t *bytes, int len, char *header);
-void		print_icmp(uint8_t *bytes, int len);
-void		print_ip(uint8_t *buffer, uint32_t total_bytes);
+void		print_bytes(uint8_t *bytes, size_t len, char *header);
+void		print_icmp(uint8_t *bytes, size_t len);
+void		print_ip(uint8_t *byes, size_t len);
 void		print_usage(char *prog_name);
 void		print_addr(struct sockaddr_in *addr);
 long long	elapsed_time(struct timeval start, struct timeval end);
@@ -83,7 +83,7 @@ void		process_packet(int bytes, t_ft_ping *app);
 void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header, 
 			int bytes, t_ft_ping *app);
 void	ping_success(t_ip_header *ip_header, t_icmp_header *icmp_header, 
-			int bytes, t_ft_ping *app);
+			t_ft_ping *app);
 int		ping_loop(int sock, t_ft_ping *app);
 
 /***** IP *****/

@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:48:54 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/28 17:52:54 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/29 16:24:04 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,15 +35,15 @@ void	process_packet(int bytes, t_ft_ping *app)
 	int				offset;
 	t_ip_header		*ip_header;
 	t_icmp_header	*icmp_header;
-	
-	ip_header = (t_ip_header*) app->recvbuffer;
+
+	ip_header = (t_ip_header *) app->recvbuffer;
 	offset = ip_header->ihl * 4;
 	icmp_header = (struct icmphdr *)(app->recvbuffer + offset);
 	if (icmp_header->type == ICMP_ECHOREPLY)
 	{
 		if (ntohs(icmp_header->un.echo.id) == app->pid)
-		ping_success(ip_header, icmp_header, bytes, app);
-	} 
+			ping_success(ip_header, icmp_header, app);
+	}
 	else
 		ping_fail(ip_header, icmp_header, bytes, app);
 }
@@ -51,10 +51,10 @@ void	process_packet(int bytes, t_ft_ping *app)
 
 int	send_packet(int sock, uint8_t *sendbuffer, struct sockaddr_in *addr)
 {
-	int bytes;
-	
+	int	bytes;
+
 	bytes = sendto(sock, sendbuffer, PACKET_SIZE, 
-		0, (struct sockaddr *)addr, sizeof(*addr));
+			0, (struct sockaddr *)addr, sizeof(*addr));
 	if (bytes < 0)
 		perror("send packet");
 	return (bytes);
@@ -71,7 +71,7 @@ int	receive_packet(int sock, uint8_t *recvbuffer, size_t bufsize,
 		reply_addr_len = sizeof(*reply_addr);
 		memset(reply_addr, 0, reply_addr_len);
 		bytes = recvfrom(sock, recvbuffer, bufsize, 0, 
-			(struct sockaddr *) reply_addr, &reply_addr_len);
+				(struct sockaddr *) reply_addr, &reply_addr_len);
 		if (sequence == buffer_get_sequence(recvbuffer, bufsize) || bytes < 0)
 			break ;
 	}
@@ -94,6 +94,5 @@ void	prepare_echo_request_packet(void *payload, size_t payload_len,
 	packet->un.echo.sequence = htons(seq);
 	memcpy(sendbuffer + sizeof(t_icmp_header), payload, payload_len);
 	assert(packet->checksum == 0);
-	packet->checksum = 0;
 	packet->checksum = calculate_checksum((uint16_t*) packet, packet_size);
 }

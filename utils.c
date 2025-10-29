@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 10:58:49 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/29 15:59:14 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/29 16:23:04 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,7 +35,7 @@ void	print_ip(uint8_t *bytes, size_t len)
 	size_t			ip_header_len;
 
 	print_bytes(bytes, len, "RAW PACKET");
-	printf("\n\n========== IP HEADER ==========\n");
+	printf("\n========== IP HEADER ==========\n");
 	ip = (t_ip_header *)bytes;
 	ip_header_len = ip->ihl * 4;
 	printf("Version:        %d\n", ip->version);
@@ -65,7 +65,7 @@ void	print_ip(uint8_t *bytes, size_t len)
 		case IPPROTO_ICMP:
 			print_icmp(bytes + ip_header_len, len - ip_header_len);
 			break;
-		default:
+		default:	/* Handle more protocols here */
 			fprintf(stderr,"Unrecognized protocol: %d\n", ip->protocol);
 	}
 	printf("=====================================\n\n");
@@ -98,23 +98,6 @@ void	print_icmp(uint8_t *bytes, size_t len)
 	if (len > 24)
 		printf("...");
 	printf("\n");
-	// int	i;
-
-	// i = 0;
-	// while (i < 8)
-	// {
-	// 	if (i == 0)
-	// 		printf("Type:\t");
-	// 	if (i == 1)
-	// 		printf("\nCode:\t");
-	// 	if (i == 2)
-	// 		printf("\nChksum:\t");
-	// 	if (i == 4)
-	// 		printf("\nRest:\t");
-	// 	printf("%02x", (uint8_t) bytes[i++]);
-	// }
-	// printf("\nPayload:\t");
-	// print_bytes(bytes + 8, len - 8, NULL);
 }
 
 void	print_usage(char *prog_name)
@@ -124,6 +107,7 @@ void	print_usage(char *prog_name)
 
 void	print_addr(struct sockaddr_in *addr)
 {
+	// TODO: update with flags when implement
 	printf("%s\n", inet_ntoa(addr->sin_addr));
 }
 
