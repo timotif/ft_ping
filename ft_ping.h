@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/29 21:09:34 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/29 21:27:06 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,7 +45,7 @@ enum	e_stat
 	STDDEV
 };
 
-typedef enum	e_packet_type // TODO: maybe delete
+typedef enum e_packet_type // TODO: maybe delete
 {
 	ICMP,
 	IP,

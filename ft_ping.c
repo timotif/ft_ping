@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:54:32 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/29 20:59:15 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/29 21:28:23 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,7 +76,7 @@ int	main(int ac, char **av)
 	// TODO: resolve through DNS
 	if (inet_pton(AF_INET, app.dest, &dest_ip) != 1)
 	{
-		fprintf(stderr, "Invalid address: %s\n", app.dest);
+		fprintf(stderr, "ping: unknown host\n");
 		return (1);
 	}
 	setup_destination(&app, dest_ip);
