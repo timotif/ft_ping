@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:48:54 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/29 16:24:04 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/29 17:28:44 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,26 +60,47 @@ int	send_packet(int sock, uint8_t *sendbuffer, struct sockaddr_in *addr)
 	return (bytes);
 }
 
-int	receive_packet(int sock, uint8_t *recvbuffer, size_t bufsize, 
-		struct sockaddr_in *reply_addr, uint16_t sequence)
+int	receive_packet(int sock, uint8_t *recvbuffer, size_t bufsize,
+		struct sockaddr_in *reply_addr, uint16_t sequence,
+		struct timeval *kernel_time)
 {
-	int			bytes;
-	socklen_t	reply_addr_len;
+	int				bytes;
+	struct msghdr	msg;
+	struct iovec	iov;
+	char			control[1024];
+	struct cmsghdr	*cmsg;
 
 	while (1)
 	{
-		reply_addr_len = sizeof(*reply_addr);
-		memset(reply_addr, 0, reply_addr_len);
-		bytes = recvfrom(sock, recvbuffer, bufsize, 0, 
-				(struct sockaddr *) reply_addr, &reply_addr_len);
-		if (sequence == buffer_get_sequence(recvbuffer, bufsize) || bytes < 0)
+		memset(reply_addr, 0, sizeof(*reply_addr));
+		memset(&msg, 0, sizeof(msg));
+		memset(control, 0, sizeof(control));
+		iov.iov_base = recvbuffer;
+		iov.iov_len = bufsize;
+		msg.msg_name = reply_addr;
+		msg.msg_namelen = sizeof(*reply_addr);
+		msg.msg_iov = &iov;
+		msg.msg_iovlen = 1;
+		msg.msg_control = control;
+		msg.msg_controllen = sizeof(control);
+		bytes = recvmsg(sock, &msg, 0);
+		if (bytes < 0 || sequence == buffer_get_sequence(recvbuffer, bufsize))
+		{
+			if (bytes >= 0 && kernel_time)
+			{
+				for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg))
+				{
+					if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SO_TIMESTAMP)
+						*kernel_time = *(struct timeval *)CMSG_DATA(cmsg);
+				}
+			}
 			break ;
+		}
 	}
 	return (bytes);
 }
 
-
-void	prepare_echo_request_packet(void *payload, size_t payload_len, 
+void	prepare_echo_request_packet(void *payload, 
 		uint8_t *sendbuffer, int seq, pid_t pid)
 {
 	t_icmp_header	*packet;
@@ -92,7 +113,7 @@ void	prepare_echo_request_packet(void *payload, size_t payload_len,
 	packet->code = 0;
 	packet->un.echo.id = htons(pid);
 	packet->un.echo.sequence = htons(seq);
-	memcpy(sendbuffer + sizeof(t_icmp_header), payload, payload_len);
+	memcpy(sendbuffer + sizeof(t_icmp_header), payload, PAYLOAD_SIZE);
 	assert(packet->checksum == 0);
 	packet->checksum = calculate_checksum((uint16_t*) packet, packet_size);
 }

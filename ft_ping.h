@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/29 16:04:46 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/29 17:29:06 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,6 +36,21 @@
 typedef struct icmphdr	t_icmp_header;
 typedef struct iphdr	t_ip_header;
 
+enum	e_stat
+{
+	MIN,
+	AVG,
+	MAX,
+	STDDEV
+};
+
+typedef enum	e_packet_type // TODO: maybe delete
+{
+	ICMP,
+	IP,
+	PAYLOAD
+}	t_packet_type;
+
 // Application state - tracks metadata, not the headers themselves
 typedef struct s_ft_ping
 {
@@ -52,6 +67,7 @@ typedef struct s_ft_ping
 	uint8_t				recvbuffer[RECV_BUFFER_SIZE]; 	// received packet
 	struct sockaddr_in	dest_addr;              		// destination address
 	struct sockaddr_in	reply_addr;             		// address from last reply
+	long long			stats[4];
 }	t_ft_ping;
 
 /***** GLOBAL *****/
@@ -70,13 +86,14 @@ void		print_addr(struct sockaddr_in *addr);
 long long	elapsed_time(struct timeval start, struct timeval end);
 
 /***** PACKET *****/
-void		prepare_echo_request_packet(void *payload, size_t payload_len, 
-			uint8_t *sendbuffer, int seq, pid_t pid);
+void		prepare_echo_request_packet(void *payload, uint8_t *sendbuffer,
+			int seq, pid_t pid);
 uint32_t	calculate_checksum(uint16_t *data, uint32_t len);
 int			send_packet(int sock, uint8_t *sendbuffer,
 			struct sockaddr_in *addr);
 int			receive_packet(int sock, uint8_t *recvbuffer, size_t bufsize,
-			struct sockaddr_in *reply_addr, uint16_t sequence);
+			struct sockaddr_in *reply_addr, uint16_t sequence,
+			struct timeval *kernel_time);
 void		process_packet(int bytes, t_ft_ping *app);
 
 /***** PING *****/

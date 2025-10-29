@@ -6,25 +6,28 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/29 16:16:58 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/29 17:32:36 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ft_ping.h"
 
 
-void	ping_success(t_ip_header *ip_header, t_icmp_header *icmp_header, 
+void	ping_success(t_ip_header *ip_header, t_icmp_header *icmp_header,
 		t_ft_ping *app)
 {
-	long long	time;
+	long long		time;
+	struct timeval	send_time;
 
 	app->rcv_packets++;
-	time = elapsed_time(app->start, app->end);
+	memcpy(&send_time, app->recvbuffer + (ip_header->ihl * 4) + sizeof(t_icmp_header),
+		sizeof(send_time));
+	time = elapsed_time(send_time, app->end);
 	/* 64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.022 ms */
 	printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%lld.%03lld ms\n",
-		PACKET_SIZE, ip_get_source_addr(ip_header), 
-		icmp_get_sequence(icmp_header), 
-		ip_header->ttl, time / 1000, time % 1000);	
+		PACKET_SIZE, ip_get_source_addr(ip_header),
+		icmp_get_sequence(icmp_header),
+		ip_header->ttl, time / 1000, time % 1000);
 }
 
 void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header, 
@@ -44,33 +47,47 @@ void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header,
 	}
 }
 
+/* Payload: timestamp in host order + filler */
+void	prepare_payload(void *payload, int size)
+{
+	struct timeval	timestamp;
+
+	memset(payload, 0, size);
+	gettimeofday(&timestamp, NULL);
+	memcpy(payload, &timestamp, sizeof(timestamp));
+	memset(payload + sizeof(timestamp), 0x42, size - sizeof(timestamp));
+}
+
 int	ping_loop(int sock, t_ft_ping *app)
 {
-	char	payload[PAYLOAD_SIZE];
-	int		bytes;
+	char			payload[PAYLOAD_SIZE];
+	int				bytes;
+	struct timeval	recv_time;
 
 	bytes = 0;
 	app->pid = getpid();
 	while (1)
 	{
-		// Prepare packet
-		memset(payload, 0x42, PAYLOAD_SIZE);
-		memset(&app->start, 0, sizeof(app->start));
+		// Prepare packet (timestamp embedded in payload)
 		memset(&app->end, 0, sizeof(app->end));
-		prepare_echo_request_packet(payload, PAYLOAD_SIZE, app->sendbuffer, 
-				++app->sequence, app->pid);
+		memset(&recv_time, 0, sizeof(recv_time));
+		prepare_payload(payload, PAYLOAD_SIZE);
+		prepare_echo_request_packet(payload, app->sendbuffer, ++app->sequence,
+			app->pid);
 		// print_icmp(app->sendbuffer, PACKET_SIZE); // DEBUG
-		gettimeofday(&app->start, NULL);
 		if (send_packet(sock, app->sendbuffer, &app->dest_addr) < 0)
-			continue;
+			continue ;
 		app->sent_packets++;
 		bytes = receive_packet(sock, app->recvbuffer, sizeof(app->recvbuffer),
-				&app->reply_addr, app->sequence);
-		gettimeofday(&app->end, NULL);
+				&app->reply_addr, app->sequence, &recv_time);
+		if (recv_time.tv_sec != 0)
+			app->end = recv_time;
+		else
+			gettimeofday(&app->end, NULL);
 		// print_ip(app->recvbuffer, bytes); // DEBUG
 		if (bytes < 0)
 		{
-			if (errno == EAGAIN || errno == EWOULDBLOCK) // TODO: q
+			if (errno == EWOULDBLOCK)
 				printf("Request timeout for icmp_seq=%d\n", app->sequence);
 			else
 				perror("recvfrom");
