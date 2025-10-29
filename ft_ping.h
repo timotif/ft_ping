@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/29 18:41:56 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/29 21:09:34 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@
 # include <stdbool.h>
 # include <signal.h>
 # include <assert.h>
+# include <math.h>
 
 # define PAYLOAD_SIZE PACKET_SIZE - 8
 # define PACKET_SIZE 64
@@ -67,6 +68,7 @@ typedef struct s_ft_ping
 	uint8_t				recvbuffer[RECV_BUFFER_SIZE]; 	// received packet
 	struct sockaddr_in	dest_addr;              		// destination address
 	struct sockaddr_in	reply_addr;             		// address from last reply
+	double				variance_m2;					// For the Welford algorithm
 	long long			stats[4];
 }	t_ft_ping;
 

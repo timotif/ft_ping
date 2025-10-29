@@ -6,12 +6,28 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/29 17:32:36 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/29 21:08:50 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ft_ping.h"
 
+void	update_stats(t_ft_ping *app, long long time)
+{
+	double	delta;
+	double	delta2;
+
+	if (app->rcv_packets == 1 || app->stats[MIN] > time)
+		app->stats[MIN] = time;
+	if (app->rcv_packets == 1 || app->stats[MAX] < time)
+		app->stats[MAX] = time;	
+	delta = time - app->stats[AVG];
+	app->stats[AVG] += delta / app->rcv_packets;
+	delta2 = time - app->stats[AVG];
+	app->variance_m2 = delta * delta2;
+	if (app->rcv_packets > 1)
+		app->stats[STDDEV] = (long long)sqrt(app->variance_m2 / app->rcv_packets);
+}
 
 void	ping_success(t_ip_header *ip_header, t_icmp_header *icmp_header,
 		t_ft_ping *app)
@@ -23,6 +39,7 @@ void	ping_success(t_ip_header *ip_header, t_icmp_header *icmp_header,
 	memcpy(&send_time, app->recvbuffer + (ip_header->ihl * 4) + sizeof(t_icmp_header),
 		sizeof(send_time));
 	time = elapsed_time(send_time, app->end);
+	update_stats(app, time);
 	/* 64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.022 ms */
 	printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%lld.%03lld ms\n",
 		PACKET_SIZE, ip_get_source_addr(ip_header),
