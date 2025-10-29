@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 11:05:14 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/27 18:16:44 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/29 22:32:19 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@ void	parse_flag(char *flag, t_ft_ping *app, char *prog_name)
 	switch (*flag)
 	{
 		case 'v':
-			app->verbose = true;
+			app->flags[VERBOSE] = 1;
 			break;
 		case '?':
 			print_usage(prog_name);

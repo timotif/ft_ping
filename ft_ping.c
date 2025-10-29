@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:54:32 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/29 21:28:23 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/29 22:32:04 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,11 +81,15 @@ int	main(int ac, char **av)
 	}
 	setup_destination(&app, dest_ip);
 	app.socket = init_socket();
-	printf("PING %s (%s): %d data bytes\n",
+	app.pid = getpid();
+	printf("PING %s (%s): %d data bytes",
 		av[1],
 		app.dest,
-		PACKET_SIZE
+		PAYLOAD_SIZE
 		);
+	if (app.flags[VERBOSE])
+		printf(", id 0x%04x = %d", app.pid, app.pid);
+	printf("\n");
 	signal(SIGINT, interrupt);
 	return (ping_loop(app.socket, &app));
 }

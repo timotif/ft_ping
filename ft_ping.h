@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/29 21:27:06 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/29 22:31:38 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,6 +45,11 @@ enum	e_stat
 	STDDEV
 };
 
+enum	e_flags
+{
+	VERBOSE
+};
+
 typedef enum e_packet_type // TODO: maybe delete
 {
 	ICMP,
@@ -55,7 +60,7 @@ typedef enum e_packet_type // TODO: maybe delete
 // Application state - tracks metadata, not the headers themselves
 typedef struct s_ft_ping
 {
-	bool				verbose;
+	uint8_t				flags[1];
 	const char			*dest;
 	int					socket;
 	uint16_t			pid;           // process ID for echo_id

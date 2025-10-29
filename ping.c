@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/29 21:32:46 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/29 22:14:21 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,28 +79,22 @@ int	ping_loop(int sock, t_ft_ping *app)
 {
 	char			payload[PAYLOAD_SIZE];
 	int				bytes;
-	struct timeval	recv_time;
 
-	bytes = 0;
-	app->pid = getpid();
+	app->sequence = -1;
 	while (1)
 	{
+		app->sequence++;
 		// Prepare packet (timestamp embedded in payload)
 		memset(&app->end, 0, sizeof(app->end));
-		memset(&recv_time, 0, sizeof(recv_time));
 		prepare_payload(payload, PAYLOAD_SIZE);
-		prepare_echo_request_packet(payload, app->sendbuffer, app->sequence++,
+		prepare_echo_request_packet(payload, app->sendbuffer, app->sequence,
 			app->pid);
 		// print_icmp(app->sendbuffer, PACKET_SIZE); // DEBUG
 		if (send_packet(sock, app->sendbuffer, &app->dest_addr) < 0)
 			continue ;
 		app->sent_packets++;
 		bytes = receive_packet(sock, app->recvbuffer, sizeof(app->recvbuffer),
-				&app->reply_addr, app->sequence- 1, &recv_time);
-		if (recv_time.tv_sec != 0)
-			app->end = recv_time;
-		else
-			gettimeofday(&app->end, NULL);
+				&app->reply_addr, app->sequence, &app->end);
 		// print_ip(app->recvbuffer, bytes); // DEBUG
 		if (bytes < 0)
 		{
