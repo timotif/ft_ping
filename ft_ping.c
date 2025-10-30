@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:54:32 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/30 13:09:13 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/30 13:14:56 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,8 +48,8 @@ void	interrupt(int signum)
 	loss = 0.0;
 	if (g_ft_ping->sent_packets > 0)
 		loss = 100 - (g_ft_ping->rcv_packets * 100 / g_ft_ping->sent_packets);
-	/* --- 1.1.1.1 ping statistics ---
-1 packets transmitted, 1 packets received, 0% packet loss */
+	/*	--- 1.1.1.1 ping statistics ---
+		1 packets transmitted, 1 packets received, 0% packet loss */
 	printf("--- %s ping statistics ---\n", g_ft_ping->hostname);
 	printf("%d packets transmitted, %d packets received, %.1f%% packet loss\n",
 		g_ft_ping->sent_packets, g_ft_ping->rcv_packets, loss);
@@ -61,6 +61,7 @@ void	interrupt(int signum)
 		app->stats[STDDEV] / 1000, app->stats[STDDEV] % 1000);
 	if (g_ft_ping->socket >= 0)
 		close(g_ft_ping->socket);
+	freeaddrinfo(g_ft_ping->res);
 	g_ft_ping = NULL;
 	exit (0);
 }
