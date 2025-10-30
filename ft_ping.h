@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/29 22:31:38 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/30 13:06:19 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,7 @@
 # include <netinet/in.h>
 # include <netinet/ip_icmp.h>
 # include <netinet/ip.h>
+# include <netdb.h>
 # include <sys/time.h>
 # include <stdbool.h>
 # include <signal.h>
@@ -47,7 +48,8 @@ enum	e_stat
 
 enum	e_flags
 {
-	VERBOSE
+	VERBOSE,
+	FLAGS_COUNT
 };
 
 typedef enum e_packet_type // TODO: maybe delete
@@ -60,11 +62,14 @@ typedef enum e_packet_type // TODO: maybe delete
 // Application state - tracks metadata, not the headers themselves
 typedef struct s_ft_ping
 {
-	uint8_t				flags[1];
-	const char			*dest;
+	uint8_t				flags[FLAGS_COUNT]; // allocates for the amount of flags I implemented
+	const char			*hostname;
+	char				ip_str[INET_ADDRSTRLEN];
 	int					socket;
-	uint16_t			pid;           // process ID for echo_id
-	uint16_t			sequence;      // current sequence number
+	struct addrinfo		hints;
+	struct addrinfo		*res;
+	uint16_t			pid;           				// process ID for echo_id
+	uint16_t			sequence;      				// current sequence number
 	int					sent_packets;
 	int					rcv_packets;
 	struct timeval		start;

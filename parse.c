@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 11:05:14 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/29 22:32:19 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/30 12:14:43 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,12 +53,12 @@ void	parse_args(int ac, char **av, t_ft_ping *app)
 				parse_flag(av[i], app, av[0]);
 			else
 			{
-				if (!app->dest)
-					app->dest = av[i];
+				if (!app->hostname)
+					app->hostname = av[i];
 			}
 		}
 	}
-	if (!app->dest)
+	if (!app->hostname)
 	{
 		print_usage(av[0]);
 		exit (1);
