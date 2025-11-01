@@ -2,6 +2,13 @@
 
 A comprehensive guide for testing various ping scenarios and error conditions.
 
+**Important Note:** This guide's expected outputs are based on **inetutils-2.0** ping behavior. Key differences from other implementations:
+- **No per-packet timeout by default** - ping waits indefinitely for replies unless interrupted
+- Sequence numbers start at 0 (not 1)
+- Statistics format: `round-trip min/avg/max/stddev = ...`
+- Exit code 0 when interrupted with Ctrl-C (even with packet loss)
+- Exit code 1 when using `-c` option and 100% packet loss occurs
+
 ---
 
 ## Table of Contents
@@ -20,7 +27,18 @@ A comprehensive guide for testing various ping scenarios and error conditions.
 ```bash
 sudo ./ft_ping 127.0.0.1
 ```
-**Expected:** Very fast replies (< 1ms), 0% packet loss, TTL=64
+**Expected Output (inetutils-2.0):**
+```
+PING 127.0.0.1 (127.0.0.1): 56 data bytes
+64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.038 ms
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.041 ms
+64 bytes from 127.0.0.1: icmp_seq=2 ttl=64 time=0.043 ms
+^C
+--- 127.0.0.1 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max/stddev = 0.038/0.041/0.043/0.000 ms
+```
+**Expected:** Very fast replies (< 0.1ms), 0% packet loss, TTL=64, runs indefinitely until Ctrl-C, exit code 0
 
 ### Test 2: Public DNS Servers
 ```bash
@@ -28,40 +46,72 @@ sudo ./ft_ping 8.8.8.8          # Google DNS
 sudo ./ft_ping 1.1.1.1          # Cloudflare DNS
 sudo ./ft_ping 9.9.9.9          # Quad9 DNS
 ```
-**Expected:** Fast replies (10-100ms depending on location), 0% packet loss, TTL varies
+**Expected Output (example for 8.8.8.8):**
+```
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+64 bytes from 8.8.8.8: icmp_seq=0 ttl=119 time=146.167 ms
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=119 time=74.458 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=119 time=580.674 ms
+^C
+--- 8.8.8.8 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max/stddev = 74.458/267.100/580.674/223.655 ms
+```
+**Expected:** Replies with variable latency (10-600ms depending on location/network), 0% packet loss, TTL varies (typically 50-120), runs indefinitely until Ctrl-C, exit code 0
 
 ### Test 3: Local Gateway
 ```bash
 # Find your gateway **first**
 ip route | grep default
 # Then ping it
-sudo ./ft_ping 192.168.1.1  # (use your actual gateway IP)
+sudo ./ft_ping 10.0.1.1  # (use your actual gateway IP)
 ```
-**Expected:** Very fast replies (< 5ms), 0% packet loss
+**Expected Output (example):**
+```
+PING 10.0.1.1 (10.0.1.1): 56 data bytes
+64 bytes from 10.0.1.1: icmp_seq=0 ttl=255 time=14.482 ms
+64 bytes from 10.0.1.1: icmp_seq=1 ttl=255 time=6.829 ms
+64 bytes from 10.0.1.1: icmp_seq=2 ttl=255 time=1.350 ms
+^C
+--- 10.0.1.1 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max/stddev = 1.350/7.554/14.482/5.386 ms
+```
+**Expected:** Fast replies (typically 1-15ms), 0% packet loss, TTL usually 255 or 64, runs indefinitely until Ctrl-C, exit code 0
 
 ---
 
 ## Timeout Tests
 
-### Test 4: Non-routable IP (Timeout)
+### Test 4: Non-routable IP (No Reply)
 ```bash
 sudo ./ft_ping 192.0.2.1        # TEST-NET-1 (RFC 5737)
 sudo ./ft_ping 198.51.100.1     # TEST-NET-2
 sudo ./ft_ping 203.0.113.1      # TEST-NET-3
 ```
-**Expected:** No replies, timeout after 3 seconds per packet, 100% packet loss
+**Expected Output (inetutils-2.0):**
+```
+PING 192.0.2.1 (192.0.2.1): 56 data bytes
+(no replies, waits indefinitely - use Ctrl-C to stop)
+^C
+--- 192.0.2.1 ping statistics ---
+10 packets transmitted, 0 packets received, 100% packet loss
+```
+**Expected:** No replies shown, ping waits indefinitely (sends packets every ~1 second), 100% packet loss when interrupted with Ctrl-C, exit code 0 (interrupted) or 1 (if using -c option)
+
+**Note:** Unlike some implementations, inetutils ping does NOT have a per-packet timeout by default. It will continue sending packets indefinitely until stopped.
 
 ### Test 5: Valid but Filtered Host
 ```bash
 sudo ./ft_ping 192.168.255.254  # Likely doesn't exist in your network
 ```
-**Expected:** Timeout, 100% packet loss
+**Expected:** No replies, waits indefinitely, 100% packet loss when stopped
 
 ### Test 6: Private Network (if not on it)
 ```bash
 sudo ./ft_ping 10.255.255.254   # Private network you're not on
 ```
-**Expected:** Either timeout or ICMP unreachable from your router
+**Expected:** Either no replies (waits indefinitely) or ICMP unreachable from your router (if router responds with Type 3 error)
 
 ---
 
@@ -70,7 +120,7 @@ sudo ./ft_ping 10.255.255.254   # Private network you're not on
 ### Test 7: Network Unreachable
 ```bash
 # Add a fake route that goes nowhere
-sudo ip route add 192.0.2.0/24 via 192.168.1.254  # Non-existent gateway
+sudo ip route add 192.0.2.0/24 via 10.0.1.254  # Non-existent gateway
 
 # Ping it
 sudo ./ft_ping 192.0.2.5
@@ -78,29 +128,33 @@ sudo ./ft_ping 192.0.2.5
 # Cleanup
 sudo ip route del 192.0.2.0/24
 ```
-**Expected:** ICMP Type 3, Code 0 (Network Unreachable) from your gateway
+**Expected Output (inetutils-2.0):**
+```
+/home/tfregni/Desktop/42/advanced/ft_ping/bin/ping: sending packet: Operation not permitted
+```
+**Expected:** No packets sent, error message, exit code 1
 
 ### Test 8: Host Unreachable (Using ARP Failure)
 ```bash
-# Ping a host on your local subnet that doesn't exist
-# Find your subnet first:
-ip addr show | grep inet
-
-# If you're on 192.168.1.0/24, try:
-sudo ./ft_ping 192.168.1.254
+sudo ./ft_ping -v 10.0.1.254
 ```
-**Expected:** Either timeout or ICMP Type 3, Code 1 (Host Unreachable)
+**Expected Output (inetutils-2.0):**
+```
+PING 10.0.1.254 (10.0.1.254): 56 data bytes, id 0x8a0e = 35342
+92 bytes from tfregni-ryzen (10.0.1.50): Destination Host Unreachable
+IP Hdr Dump:
+ 4500 0054 257f 4000 4001 fdfa 0a00 0132 0a00 01fe 
+Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src      Dst     Data
+ 4  5  00 0054 257f   2 0000  40  01 fdfa 10.0.1.50  10.0.1.254 
+ICMP: type 8, code 0, size 64, id 0x8a0e, seq 0x0000
+... (repeats for each packet)
+--- 10.0.1.254 ping statistics ---
+3 packets transmitted, 0 packets received, 100% packet loss
+```
+**Expected:** Each failed packet prints a verbose error and packet dump, exit code 1
 
 ### Test 9: Simulate Port Unreachable (Different Protocol)
-This is trickier since ping uses ICMP, but you can observe it by:
-```bash
-# In one terminal, monitor ICMP with your ft_ping verbose mode
-sudo ./ft_ping -v 8.8.8.8
-
-# In another terminal, send UDP to a random port
-nc -u 8.8.8.8 12345
-```
-**Expected:** You'll see ICMP Type 3, Code 3 messages (but not related to your ping)
+This is not shown by ping itself, but can be observed with tcpdump or Wireshark.
 
 ---
 
@@ -117,7 +171,20 @@ sudo ./ft_ping 127.0.0.1
 # Cleanup
 sudo tc qdisc del dev lo root
 ```
-**Expected:** ~30% packet loss reported
+**Expected Output (example with -c 10):**
+```
+PING 127.0.0.1 (127.0.0.1): 56 data bytes
+64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.045 ms
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.053 ms
+64 bytes from 127.0.0.1: icmp_seq=2 ttl=64 time=0.050 ms
+64 bytes from 127.0.0.1: icmp_seq=3 ttl=64 time=0.060 ms
+64 bytes from 127.0.0.1: icmp_seq=5 ttl=64 time=0.044 ms
+64 bytes from 127.0.0.1: icmp_seq=7 ttl=64 time=0.051 ms
+--- 127.0.0.1 ping statistics ---
+10 packets transmitted, 6 packets received, 40% packet loss
+round-trip min/avg/max/stddev = 0.044/0.050/0.060/0.000 ms
+```
+**Expected:** Approximately 30% packet loss (may vary), missing sequence numbers (e.g., 4, 6, 8, 9), exit code 1 with -c option
 
 ### Test 11: Latency Simulation
 ```bash
@@ -130,7 +197,19 @@ sudo ./ft_ping 127.0.0.1
 # Cleanup
 sudo tc qdisc del dev lo root
 ```
-**Expected:** ~200ms response times (plus variance)
+**Expected Output (example with -c 5):**
+```
+PING 127.0.0.1 (127.0.0.1): 56 data bytes
+64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=400.091 ms
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=400.073 ms
+64 bytes from 127.0.0.1: icmp_seq=2 ttl=64 time=400.077 ms
+64 bytes from 127.0.0.1: icmp_seq=3 ttl=64 time=400.073 ms
+64 bytes from 127.0.0.1: icmp_seq=4 ttl=64 time=400.077 ms
+--- 127.0.0.1 ping statistics ---
+5 packets transmitted, 5 packets received, 0% packet loss
+round-trip min/avg/max/stddev = 400.073/400.078/400.091/0.000 ms
+```
+**Expected:** ~400ms response times (200ms each direction), very consistent timing, 0% packet loss
 
 ### Test 12: Jitter and Packet Reordering
 ```bash
@@ -143,7 +222,20 @@ sudo ./ft_ping 127.0.0.1
 # Cleanup
 sudo tc qdisc del dev lo root
 ```
-**Expected:** Variable response times (50-150ms range)
+**Expected Output (example with -c 10):**
+```
+PING 127.0.0.1 (127.0.0.1): 56 data bytes
+64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=212.591 ms
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=180.117 ms
+64 bytes from 127.0.0.1: icmp_seq=2 ttl=64 time=138.737 ms
+64 bytes from 127.0.0.1: icmp_seq=3 ttl=64 time=236.413 ms
+64 bytes from 127.0.0.1: icmp_seq=4 ttl=64 time=123.022 ms
+...
+--- 127.0.0.1 ping statistics ---
+10 packets transmitted, 10 packets received, 0% packet loss
+round-trip min/avg/max/stddev = 123.022/188.696/239.679/35.660 ms
+```
+**Expected:** Highly variable response times (roughly 100-300ms range), significant stddev (30-50ms), 0% packet loss
 
 ### Test 13: Complete Blackhole
 ```bash
@@ -156,7 +248,13 @@ sudo ./ft_ping 127.0.0.1
 # Cleanup
 sudo iptables -D OUTPUT -p icmp --icmp-type echo-reply -j DROP
 ```
-**Expected:** 100% packet loss, timeout on every packet
+**Expected Output (example with -c 5):**
+```
+PING 127.0.0.1 (127.0.0.1): 56 data bytes
+--- 127.0.0.1 ping statistics ---
+5 packets transmitted, 0 packets received, 100% packet loss
+```
+**Expected:** No replies shown, 100% packet loss, exit code 1 (with -c option)
 
 ---
 
@@ -192,7 +290,11 @@ sudo ./ft_ping -s 1000 127.0.0.1  # 1000 byte payload
 sudo ./ft_ping 999.999.999.999
 sudo ./ft_ping invalid.test.example
 ```
-**Expected:** Error message before attempting to ping
+**Expected Output (inetutils-2.0):**
+```
+/path/to/ping: unknown host
+```
+**Expected:** Error message immediately (no packets sent), exit code 1, program terminates before attempting to ping
 
 ---
 
@@ -200,16 +302,16 @@ sudo ./ft_ping invalid.test.example
 
 ### Test 18: Isolated Network Environment
 ```bash
-# Create isolated network namespace
 sudo ip netns add test_ns
-
-# Run ping in isolated namespace (no network access)
 sudo ip netns exec test_ns ./ft_ping 8.8.8.8
-
-# Cleanup
 sudo ip netns del test_ns
 ```
-**Expected:** Network unreachable error
+**Expected Output (inetutils-2.0):**
+```
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+/home/tfregni/Desktop/42/advanced/ft_ping/bin/ping: sending packet: Network is unreachable
+```
+**Expected:** No packets sent, error message, exit code 1
 
 ### Test 19: Namespace with Veth Pair
 ```bash
@@ -235,7 +337,25 @@ sudo ip netns exec test_ns ./ft_ping 10.200.1.1
 sudo ip netns del test_ns
 sudo ip link del veth0
 ```
-**Expected:** Successful pings between namespaces
+**Expected Output (inetutils-2.0):**
+```
+PING 10.200.1.2 (10.200.1.2): 56 data bytes
+64 bytes from 10.200.1.2: icmp_seq=0 ttl=64 time=0.090 ms
+64 bytes from 10.200.1.2: icmp_seq=1 ttl=64 time=0.056 ms
+64 bytes from 10.200.1.2: icmp_seq=2 ttl=64 time=0.040 ms
+--- 10.200.1.2 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max/stddev = 0.040/0.062/0.090/0.000 ms
+
+PING 10.200.1.1 (10.200.1.1): 56 data bytes
+64 bytes from 10.200.1.1: icmp_seq=0 ttl=64 time=0.060 ms
+64 bytes from 10.200.1.1: icmp_seq=1 ttl=64 time=0.052 ms
+64 bytes from 10.200.1.1: icmp_seq=2 ttl=64 time=0.053 ms
+--- 10.200.1.1 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max/stddev = 0.052/0.055/0.060/0.000 ms
+```
+**Expected:** Successful pings between namespaces, low latency, 0% packet loss
 
 ---
 
@@ -244,19 +364,40 @@ sudo ip link del veth0
 ### Test 20: Side-by-Side Comparison
 ```bash
 # Run both simultaneously in different terminals
-# Terminal 1:
-ping -c 10 8.8.8.8
+# Terminal 1 (inetutils-2.0 reference):
+/path/to/inetutils/bin/ping -c 10 8.8.8.8
 
-# Terminal 2:
+# Terminal 2 (your implementation):
 sudo ./ft_ping 8.8.8.8  # (stop after 10 packets with Ctrl-C)
 ```
 
-**Compare:**
-- Sequence numbers match
-- TTL values match
-- Response times are similar
+**Compare the following in inetutils-2.0 output:**
+
+**Header format:**
+```
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+```
+
+**Per-packet format:**
+```
+64 bytes from 8.8.8.8: icmp_seq=0 ttl=119 time=146.167 ms
+```
+
+**Statistics format (after Ctrl-C or -c completion):**
+```
+--- 8.8.8.8 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max/stddev = 74.458/267.100/580.674/223.655 ms
+```
+
+**Key Points:**
+- Sequence numbers start at 0 (not 1)
+- TTL values match between implementations
+- Response times should be similar (within reasonable variance)
 - Packet loss statistics match
-- Summary statistics format
+- Statistics line format: `round-trip min/avg/max/stddev = ...` with values in ms
+- Exit code 0 on success (all or some packets received)
+- Exit code 1 on failure (no packets received or invalid host)
 
 ### Test 21: Capture with tcpdump
 ```bash
@@ -328,18 +469,21 @@ sudo kill -INT $PING_PID
 wait $PING_PID 2>/dev/null
 echo
 
-# Test 3: Non-routable (expect timeout)
-echo "Test 3: Non-routable IP (expect timeout)"
+# Test 3: Non-routable (expect no replies, but ping continues)
+echo "Test 3: Non-routable IP (expect no replies)"
 timeout 10 sudo ./ft_ping 192.0.2.1 &
 PING_PID=$!
 sleep 8
 sudo kill -INT $PING_PID
 wait $PING_PID 2>/dev/null
+echo "Note: Should show 100% packet loss but exit code may be 0 (interrupted)"
 echo
 
-# Test 4: Invalid address (expect error)
+# Test 4: Invalid address (expect immediate error with exit code 1)
 echo "Test 4: Invalid address (expect immediate error)"
 sudo ./ft_ping 999.999.999.999
+EXIT_CODE=$?
+echo "Exit code: $EXIT_CODE (expected: 1)"
 echo
 
 echo "=== Tests Complete ==="
@@ -350,6 +494,11 @@ Run with:
 chmod +x test_ft_ping.sh
 ./test_ft_ping.sh
 ```
+
+**Expected Results:**
+- Test 1 & 2: Should show replies and statistics, exit cleanly
+- Test 3: No replies shown, 100% packet loss in statistics
+- Test 4: Error message "unknown host", exit code 1
 
 ---
 
@@ -444,17 +593,20 @@ Run with: `sudo python3 test_server.py`
 
 ## Summary Checklist
 
-- [ ] Test localhost (fast, reliable)
-- [ ] Test public DNS (normal latency)
-- [ ] Test non-routable IP (timeout)
+- [ ] Test localhost (fast, reliable, < 0.1ms)
+- [ ] Test public DNS (variable latency, 10-600ms depending on network)
+- [ ] Test non-routable IP (no replies, runs indefinitely without per-packet timeout)
 - [ ] Test with packet loss simulation
 - [ ] Test with latency simulation
-- [ ] Compare output with standard ping
+- [ ] Compare output format with inetutils-2.0 ping
+- [ ] Verify sequence numbers start at 0
+- [ ] Verify statistics format: `round-trip min/avg/max/stddev = ...`
 - [ ] Verify packet format with tcpdump/Wireshark
-- [ ] Test invalid addresses
-- [ ] Test statistics are accurate
-- [ ] Test signal handling (Ctrl-C)
+- [ ] Test invalid addresses (should exit with code 1, message "unknown host")
+- [ ] Test statistics are accurate (min/avg/max/stddev calculated correctly)
+- [ ] Test signal handling (Ctrl-C shows statistics and exits cleanly)
 - [ ] Check for memory leaks (valgrind)
+- [ ] Verify exit codes: 0 on success/interrupt, 1 on error/100% loss with -c
 
 ---
 
