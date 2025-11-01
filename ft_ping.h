@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/01 16:48:56 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/01 22:18:17 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,18 +49,18 @@ enum	e_stat
 	STDDEV
 };
 
+typedef enum e_wait_result
+{
+	WAIT_ERROR = -1,
+	WAIT_TIMEOUT = 0,
+	WAIT_READY = 1
+}	t_wait_result;
+
 enum	e_flags
 {
 	VERBOSE,
 	FLAGS_COUNT
 };
-
-typedef enum e_packet_type // TODO: maybe delete
-{
-	ICMP,
-	IP,
-	PAYLOAD
-}	t_packet_type;
 
 // Application state - tracks metadata, not the headers themselves
 typedef struct s_ft_ping
@@ -122,8 +122,7 @@ void		process_packet(int bytes, t_ft_ping *app, int rcv_seq);
 /***** PING *****/
 void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header, 
 			int bytes, t_ft_ping *app);
-void	ping_success(t_ip_header *ip_header, t_icmp_header *icmp_header, 
-			t_ft_ping *app, int rcv_seq);
+void	ping_success(t_ip_header *ip_header, t_ft_ping *app, int rcv_seq);
 int		ping_loop(t_ft_ping *app);
 
 /***** IP *****/
@@ -140,4 +139,5 @@ void	bitmap_set(uint8_t *bitmap, uint16_t n);
 int		bitmap_test(uint8_t *bitmap, uint16_t n);
 void	bitmap_clear(uint8_t *bitmap, uint16_t n);
 
+void	packet_dump(uint8_t *bytes, size_t len);
 #endif

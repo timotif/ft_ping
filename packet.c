@@ -6,12 +6,11 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:48:54 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/01 15:15:38 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/01 21:27:59 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ft_ping.h"
-
 
 uint32_t	calculate_checksum(uint16_t *data, uint32_t len)
 {
@@ -37,17 +36,15 @@ void	process_packet(int bytes, t_ft_ping *app, int rcv_seq)
 	t_icmp_header	*icmp_header;
 
 	if (!ip_is_valid(app->recvbuffer, bytes))
-	{
-		printf("Invalid packet\n"); // TODO: remove
 		return ;
-	}
 	ip_header = (t_ip_header *) app->recvbuffer;
 	offset = ip_header->ihl * 4;
 	icmp_header = (struct icmphdr *)(app->recvbuffer + offset);
 	if (ntohs(icmp_header->un.echo.id) == app->pid)
 	{
+		packet_dump(app->recvbuffer, bytes); // DEBUG
 		if (icmp_header->type == ICMP_ECHOREPLY)
-			ping_success(ip_header, icmp_header, app, rcv_seq);
+			ping_success(ip_header, app, rcv_seq);
 	}
 	else
 		ping_fail(ip_header, icmp_header, bytes, app);

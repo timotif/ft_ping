@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:54:32 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/01 15:00:27 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/01 20:59:37 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,19 +24,25 @@ void	setup_destination(t_ft_ping *app, uint32_t dest_ip)
 	dest->sin_addr.s_addr = dest_ip;
 }
 
-int16_t	buffer_get_sequence(uint8_t *buffer, size_t len)
+t_icmp_header	*icmp_get_header(uint8_t *buffer, size_t len)
 {
 	t_ip_header		*ip_header;
-	t_icmp_header	*icmp_header;
 	int				offset;
 
-	if (!buffer || !len)
-		return (-1);
+	if (!ip_is_valid(buffer, len))
+		return (NULL);
 	ip_header = (t_ip_header *)buffer;
-	if (ip_header->ihl < 5 || len < ip_header->ihl * 4 + sizeof(t_icmp_header))
-		return (-1);
 	offset = ip_header->ihl * 4;
-	icmp_header = (t_icmp_header *)(buffer + offset);
+	return ((t_icmp_header *)(buffer + offset));
+}
+
+int16_t	buffer_get_sequence(uint8_t *buffer, size_t len)
+{
+	t_icmp_header	*icmp_header;
+
+	icmp_header = icmp_get_header(buffer, len);
+	if (!icmp_header)
+		return (-1);
 	return ((int16_t)icmp_get_sequence(icmp_header));
 }
 
