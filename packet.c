@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:48:54 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/01 10:07:32 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/01 15:15:38 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,19 +30,24 @@ uint32_t	calculate_checksum(uint16_t *data, uint32_t len)
 	return (~sum);
 }
 
-void	process_packet(int bytes, t_ft_ping *app)
+void	process_packet(int bytes, t_ft_ping *app, int rcv_seq)
 {
 	int				offset;
 	t_ip_header		*ip_header;
 	t_icmp_header	*icmp_header;
 
+	if (!ip_is_valid(app->recvbuffer, bytes))
+	{
+		printf("Invalid packet\n"); // TODO: remove
+		return ;
+	}
 	ip_header = (t_ip_header *) app->recvbuffer;
 	offset = ip_header->ihl * 4;
 	icmp_header = (struct icmphdr *)(app->recvbuffer + offset);
-	if (icmp_header->type == ICMP_ECHOREPLY)
+	if (ntohs(icmp_header->un.echo.id) == app->pid)
 	{
-		if (ntohs(icmp_header->un.echo.id) == app->pid)
-			ping_success(ip_header, icmp_header, app);
+		if (icmp_header->type == ICMP_ECHOREPLY)
+			ping_success(ip_header, icmp_header, app, rcv_seq);
 	}
 	else
 		ping_fail(ip_header, icmp_header, bytes, app);
@@ -61,8 +66,7 @@ int	send_packet(int sock, uint8_t *sendbuffer, struct sockaddr_in *addr)
 }
 
 int	receive_packet(int sock, uint8_t *recvbuffer, size_t bufsize,
-		struct sockaddr_in *reply_addr, uint16_t sequence,
-		struct timeval *kernel_time)
+		struct sockaddr_in *reply_addr,	struct timeval *kernel_time)
 {
 	int				bytes;
 	struct msghdr	msg;
@@ -70,31 +74,24 @@ int	receive_packet(int sock, uint8_t *recvbuffer, size_t bufsize,
 	char			control[1024];
 	struct cmsghdr	*cmsg;
 
-	while (1)
+	memset(reply_addr, 0, sizeof(*reply_addr));
+	memset(&msg, 0, sizeof(msg));
+	memset(control, 0, sizeof(control));
+	iov.iov_base = recvbuffer;
+	iov.iov_len = bufsize;
+	msg.msg_name = reply_addr;
+	msg.msg_namelen = sizeof(*reply_addr);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_control = control;
+	msg.msg_controllen = sizeof(control);
+	bytes = recvmsg(sock, &msg, 0);
+	if (bytes >= 0 && kernel_time)
 	{
-		memset(reply_addr, 0, sizeof(*reply_addr));
-		memset(&msg, 0, sizeof(msg));
-		memset(control, 0, sizeof(control));
-		iov.iov_base = recvbuffer;
-		iov.iov_len = bufsize;
-		msg.msg_name = reply_addr;
-		msg.msg_namelen = sizeof(*reply_addr);
-		msg.msg_iov = &iov;
-		msg.msg_iovlen = 1;
-		msg.msg_control = control;
-		msg.msg_controllen = sizeof(control);
-		bytes = recvmsg(sock, &msg, 0);
-		if (bytes < 0 || sequence == buffer_get_sequence(recvbuffer, bufsize))
+		for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg))
 		{
-			if (bytes >= 0 && kernel_time)
-			{
-				for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg))
-				{
-					if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SO_TIMESTAMP)
-						*kernel_time = *(struct timeval *)CMSG_DATA(cmsg);
-				}
-			}
-			break ;
+			if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SO_TIMESTAMP)
+				*kernel_time = *(struct timeval *)CMSG_DATA(cmsg);
 		}
 	}
 	return (bytes);

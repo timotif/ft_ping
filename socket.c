@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/29 18:30:09 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/31 21:40:32 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/01 14:55:58 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,5 +43,7 @@ int	set_socket_options(int raw_socket)
 	if (setsockopt(raw_socket, SOL_SOCKET, SO_TIMESTAMP,
 			&enable, sizeof(enable)) != 0)
 		error(0, errno, "setsockopt (SO_TIMESTAMP)");
+	if (setsockopt(raw_socket, SOL_SOCKET, SO_BROADCAST, (char *) &enable, sizeof(enable)) != 0)
+		error(0, errno, "setsockopt (SO_BROADCAST)");
 	return (0);
 }

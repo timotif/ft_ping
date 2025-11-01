@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:54:32 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/01 10:24:08 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/01 15:00:27 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,7 @@ void	setup_destination(t_ft_ping *app, uint32_t dest_ip)
 	dest->sin_addr.s_addr = dest_ip;
 }
 
-int16_t	buffer_get_sequence(uint8_t *buffer, int len)
+int16_t	buffer_get_sequence(uint8_t *buffer, size_t len)
 {
 	t_ip_header		*ip_header;
 	t_icmp_header	*icmp_header;
@@ -37,7 +37,7 @@ int16_t	buffer_get_sequence(uint8_t *buffer, int len)
 		return (-1);
 	offset = ip_header->ihl * 4;
 	icmp_header = (t_icmp_header *)(buffer + offset);
-	return (icmp_get_sequence(icmp_header));
+	return ((int16_t)icmp_get_sequence(icmp_header));
 }
 
 void	clean_up()
@@ -52,8 +52,10 @@ void	clean_up()
 	/*	--- 1.1.1.1 ping statistics ---
 	1 packets transmitted, 1 packets received, 0% packet loss */
 	printf("--- %s ping statistics ---\n", g_ft_ping->hostname);
-	printf("%d packets transmitted, %d packets received, %.1f%% packet loss\n",
-	g_ft_ping->sent_packets, g_ft_ping->rcv_packets, loss);
+	printf("%d packets transmitted, %d packets received, ", g_ft_ping->sent_packets, g_ft_ping->rcv_packets);
+	if (app->dup_packets)
+		printf("+%d duplicates, ", app->dup_packets);
+	printf("%.1f%% packet loss\n", loss);
 	/* round-trip min/avg/max/stddev = 31.634/31.634/31.634/0.000 ms */
 	printf("round-trip min/avg/max/stddev = %lld.%lld/%lld.%lld/%lld.%lld/%lld.%lld ms\n",
 	app->stats[MIN] / 1000, app->stats[MIN] % 1000,

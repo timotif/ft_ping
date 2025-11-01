@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/01 09:36:33 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/01 18:09:47 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,21 +32,36 @@ void	update_stats(t_ft_ping *app, long long time)
 }
 
 void	ping_success(t_ip_header *ip_header, t_icmp_header *icmp_header,
-		t_ft_ping *app)
+		t_ft_ping *app, int rcv_seq)
 {
 	long long		time;
 	struct timeval	send_time;
+	int				dup;
 
-	app->rcv_packets++;
+	(void) icmp_header; // TODO: maybe erase
+	dup = 0;
+	if (bitmap_test(app->rcv_map, rcv_seq))
+	{
+		app->dup_packets++;
+		dup = 1;
+	}
+	else
+	{
+		bitmap_set(app->rcv_map, rcv_seq);
+		app->rcv_packets++;
+	}
 	memcpy(&send_time, app->recvbuffer + (ip_header->ihl * 4) + sizeof(t_icmp_header),
 		sizeof(send_time));
 	time = elapsed_time(send_time, app->end);
 	update_stats(app, time);
 	/* 64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.022 ms */
-	printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%lld.%03lld ms\n",
+	printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%lld.%03lld ms",
 		PACKET_SIZE, ip_get_source_addr(ip_header),
-		icmp_get_sequence(icmp_header),
+		rcv_seq,
 		ip_header->ttl, time / 1000, time % 1000);
+	if (dup)
+		printf(" (DUP!)");
+	printf("\n");
 }
 
 void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header, 
@@ -77,37 +92,109 @@ void	prepare_payload(void *payload, int size)
 	memset(payload + sizeof(timestamp), 0x42, size - sizeof(timestamp));
 }
 
-int	ping_loop(t_ft_ping *app)
+int	send_echo(t_ft_ping *app)
 {
 	char			payload[PAYLOAD_SIZE];
-	int				bytes;
+	
+	memset(&app->end, 0, sizeof(app->end));
+	// Prepare packet (timestamp embedded in payload)
+	prepare_payload(payload, PAYLOAD_SIZE);
+	prepare_echo_request_packet(payload, app->sendbuffer, app->sequence,
+		app->pid);
+	// print_icmp(app->sendbuffer, PACKET_SIZE); // DEBUG
+	if (send_packet(app->socket, app->sendbuffer, &app->dest_addr) < 0)
+		return (-1);
+	app->sent_packets++;
+	return (0);
+}
 
-	app->sequence = -1;
+/* Normalizes a timeval-like structure's microseconds field so the pair 
+(tv_sec, tv_usec) represents the same total time but with tv_usec in the 
+canonical range [0, 10^6)*/
+static void normalize_timeval(struct timeval *t)
+{
+  long long usec = (long long)t->tv_usec;
+  long long sec = (long long)t->tv_sec;
+
+  long long carry = usec / 1000000LL;
+  usec -= carry * 1000000LL;
+  sec += carry;
+
+  /* if usec negative after division adjust one more second */
+  if (usec < 0) {
+    usec += 1000000LL;
+    sec -= 1;
+  }
+
+  t->tv_sec = (time_t)sec;
+  t->tv_usec = (suseconds_t)usec;
+}
+
+int	ping_loop(t_ft_ping *app)
+{
+	int				bytes;
+	int				rcv_seq;
+	struct timeval	interval, now, last, resp_time;
+	fd_set			fdset;
+	int				fd;
+
+	memset(&interval, 0, sizeof(interval));
+	memset(&now, 0, sizeof(now));
+	memset(&resp_time, 0, sizeof(resp_time));
+	memset(&last, 0, sizeof(last));
+	interval.tv_sec = INTERVAL / 1000;
+	interval.tv_usec = (INTERVAL % 1000) * 1000;
+	gettimeofday(&last, NULL);
+	app->sequence = 0;
+	send_echo(app);
 	while (1 && !app->stop)
 	{
-		app->sequence++;
-		// Prepare packet (timestamp embedded in payload)
-		memset(&app->end, 0, sizeof(app->end));
-		prepare_payload(payload, PAYLOAD_SIZE);
-		prepare_echo_request_packet(payload, app->sendbuffer, app->sequence,
-			app->pid);
-		// print_icmp(app->sendbuffer, PACKET_SIZE); // DEBUG
-		if (send_packet(app->socket, app->sendbuffer, &app->dest_addr) < 0)
-			continue ;
-		app->sent_packets++;
-		bytes = receive_packet(app->socket, app->recvbuffer, sizeof(app->recvbuffer),
-				&app->reply_addr, app->sequence, &app->end);
-		// print_ip(app->recvbuffer, bytes); // DEBUG
-		if (bytes < 0)
+		FD_ZERO(&fdset);
+		FD_SET(app->socket, &fdset);
+		gettimeofday(&now, NULL);
+		resp_time.tv_sec = last.tv_sec + interval.tv_sec - now.tv_sec;
+		resp_time.tv_usec = last.tv_usec + interval.tv_usec - now.tv_usec;
+		normalize_timeval(&resp_time);
+		if (resp_time.tv_sec < 0)
+			resp_time.tv_sec = resp_time.tv_usec = 0;
+		// printf("resp_time: %ld s, %ld us\n", resp_time.tv_sec, resp_time.tv_usec); // DEBUG
+		fd = select(app->socket + 1, &fdset, NULL, NULL, &resp_time);
+		if (fd < 0)
 		{
-			if (errno == EWOULDBLOCK)
-				printf("Request timeout for icmp_seq=%d\n", app->sequence);
+			if (errno != EINTR)
+				error(EXIT_FAILURE, errno, "select failed");
+			continue;
+		}
+		else if (fd == 1) 
+		{
+			// printf("Socket ready to read\n"); // DEBUG
+			bytes = receive_packet(app->socket, app->recvbuffer, 
+					sizeof(app->recvbuffer), &app->reply_addr, &app->end);
+			if (bytes < 0)
+			{
+				if (errno == EWOULDBLOCK)
+					printf("Request timeout for icmp_seq=%d\n", app->sequence);
+				else
+					perror("recvfrom");
+			}
 			else
-				perror("recvfrom");
+			{
+				rcv_seq = buffer_get_sequence(app->recvbuffer, bytes);
+				if (rcv_seq <= app->sequence && rcv_seq >= 0) // accept all packets
+					process_packet(bytes, app, rcv_seq);
+				else
+				{
+					assert (rcv_seq < 0);
+					printf("Error\n"); // TODO: remove
+				}
+			}
 		}
 		else
-			process_packet(bytes, app);
-		sleep(1);
+		{
+			app->sequence++;
+			send_echo(app);
+			gettimeofday(&last, NULL);
+		}
 	}
 	clean_up();
 	return (0);

@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/01 10:20:11 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/01 16:48:56 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,12 +29,14 @@
 # include <assert.h>
 # include <math.h>
 # include <error.h>
+# include <sys/select.h>
 
-# define PAYLOAD_SIZE PACKET_SIZE - 8
+# define PAYLOAD_SIZE (PACKET_SIZE - 8)
 # define PACKET_SIZE 64
 # define SOCKET_TIMEOUT 1
 # define MAX_IP_HEADER_SIZE 60
 # define RECV_BUFFER_SIZE (PACKET_SIZE + MAX_IP_HEADER_SIZE)
+# define INTERVAL 1000
 
 typedef struct icmphdr	t_icmp_header;
 typedef struct iphdr	t_ip_header;
@@ -72,8 +74,10 @@ typedef struct s_ft_ping
 	struct addrinfo			*res;
 	uint16_t				pid;           				// process ID for echo_id
 	uint16_t				sequence;      				// current sequence number
+	uint8_t					rcv_map[8192];				// bitmap to track duplicates
 	int						sent_packets;
 	int						rcv_packets;
+	int						dup_packets;
 	struct timeval			start;
 	struct timeval			end;
 	uint8_t					sendbuffer[PACKET_SIZE];  		// ICMP header + payload
@@ -112,22 +116,28 @@ uint32_t	calculate_checksum(uint16_t *data, uint32_t len);
 int			send_packet(int sock, uint8_t *sendbuffer,
 			struct sockaddr_in *addr);
 int			receive_packet(int sock, uint8_t *recvbuffer, size_t bufsize,
-			struct sockaddr_in *reply_addr, uint16_t sequence,
-			struct timeval *kernel_time);
-void		process_packet(int bytes, t_ft_ping *app);
+			struct sockaddr_in *reply_addr, struct timeval *kernel_time);
+void		process_packet(int bytes, t_ft_ping *app, int rcv_seq);
 
 /***** PING *****/
 void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header, 
 			int bytes, t_ft_ping *app);
 void	ping_success(t_ip_header *ip_header, t_icmp_header *icmp_header, 
-			t_ft_ping *app);
+			t_ft_ping *app, int rcv_seq);
 int		ping_loop(t_ft_ping *app);
 
 /***** IP *****/
 char	*ip_get_source_addr(t_ip_header *ip_header);
+int		ip_is_valid(uint8_t *packet, size_t len);
 
 /***** ICMP *****/
 uint16_t	icmp_get_sequence(t_icmp_header *icmp_header);
 
-int16_t	buffer_get_sequence(uint8_t *buffer, int len);
+int16_t	buffer_get_sequence(uint8_t *buffer, size_t len);
+
+/***** BITMAP ****/
+void	bitmap_set(uint8_t *bitmap, uint16_t n);
+int		bitmap_test(uint8_t *bitmap, uint16_t n);
+void	bitmap_clear(uint8_t *bitmap, uint16_t n);
+
 #endif
