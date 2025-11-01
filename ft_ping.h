@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/30 13:06:19 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/01 09:39:32 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@
 # include <signal.h>
 # include <assert.h>
 # include <math.h>
+# include <error.h>
 
 # define PAYLOAD_SIZE PACKET_SIZE - 8
 # define PACKET_SIZE 64
@@ -62,28 +63,31 @@ typedef enum e_packet_type // TODO: maybe delete
 // Application state - tracks metadata, not the headers themselves
 typedef struct s_ft_ping
 {
-	uint8_t				flags[FLAGS_COUNT]; // allocates for the amount of flags I implemented
-	const char			*hostname;
-	char				ip_str[INET_ADDRSTRLEN];
-	int					socket;
-	struct addrinfo		hints;
-	struct addrinfo		*res;
-	uint16_t			pid;           				// process ID for echo_id
-	uint16_t			sequence;      				// current sequence number
-	int					sent_packets;
-	int					rcv_packets;
-	struct timeval		start;
-	struct timeval		end;
-	uint8_t				sendbuffer[PACKET_SIZE];  		// ICMP header + payload
-	uint8_t				recvbuffer[RECV_BUFFER_SIZE]; 	// received packet
-	struct sockaddr_in	dest_addr;              		// destination address
-	struct sockaddr_in	reply_addr;             		// address from last reply
-	double				variance_m2;					// For the Welford algorithm
-	long long			stats[4];
+	volatile sig_atomic_t	stop;
+	uint8_t					flags[FLAGS_COUNT]; // allocates for the amount of flags I implemented
+	const char				*hostname;
+	char					ip_str[INET_ADDRSTRLEN];
+	int						socket;
+	struct addrinfo			hints;
+	struct addrinfo			*res;
+	uint16_t				pid;           				// process ID for echo_id
+	uint16_t				sequence;      				// current sequence number
+	int						sent_packets;
+	int						rcv_packets;
+	struct timeval			start;
+	struct timeval			end;
+	uint8_t					sendbuffer[PACKET_SIZE];  		// ICMP header + payload
+	uint8_t					recvbuffer[RECV_BUFFER_SIZE]; 	// received packet
+	struct sockaddr_in		dest_addr;              		// destination address
+	struct sockaddr_in		reply_addr;             		// address from last reply
+	double					variance_m2;					// For the Welford algorithm
+	long long				stats[4];
 }	t_ft_ping;
 
 /***** GLOBAL *****/
 extern t_ft_ping	*g_ft_ping;
+
+void	clean_up();
 
 /***** PARSE *****/
 void	parse_args(int ac, char **av, t_ft_ping *app);
@@ -117,7 +121,7 @@ void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header,
 			int bytes, t_ft_ping *app);
 void	ping_success(t_ip_header *ip_header, t_icmp_header *icmp_header, 
 			t_ft_ping *app);
-int		ping_loop(int sock, t_ft_ping *app);
+int		ping_loop(t_ft_ping *app);
 
 /***** IP *****/
 char	*ip_get_source_addr(t_ip_header *ip_header);

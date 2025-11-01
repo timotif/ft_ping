@@ -6,12 +6,13 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/29 22:14:21 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/01 09:36:33 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ft_ping.h"
 
+/* Using Welford's algorithm to update as we go */
 void	update_stats(t_ft_ping *app, long long time)
 {
 	double	delta;
@@ -20,11 +21,12 @@ void	update_stats(t_ft_ping *app, long long time)
 	if (app->rcv_packets == 1 || app->stats[MIN] > time)
 		app->stats[MIN] = time;
 	if (app->rcv_packets == 1 || app->stats[MAX] < time)
-		app->stats[MAX] = time;	
+		app->stats[MAX] = time;
+	// Welford's algorithm
 	delta = time - app->stats[AVG];
 	app->stats[AVG] += delta / app->rcv_packets;
 	delta2 = time - app->stats[AVG];
-	app->variance_m2 = delta * delta2;
+	app->variance_m2 += delta * delta2;
 	if (app->rcv_packets > 1)
 		app->stats[STDDEV] = (long long)sqrt(app->variance_m2 / app->rcv_packets);
 }
@@ -75,13 +77,13 @@ void	prepare_payload(void *payload, int size)
 	memset(payload + sizeof(timestamp), 0x42, size - sizeof(timestamp));
 }
 
-int	ping_loop(int sock, t_ft_ping *app)
+int	ping_loop(t_ft_ping *app)
 {
 	char			payload[PAYLOAD_SIZE];
 	int				bytes;
 
 	app->sequence = -1;
-	while (1)
+	while (1 && !app->stop)
 	{
 		app->sequence++;
 		// Prepare packet (timestamp embedded in payload)
@@ -90,10 +92,10 @@ int	ping_loop(int sock, t_ft_ping *app)
 		prepare_echo_request_packet(payload, app->sendbuffer, app->sequence,
 			app->pid);
 		// print_icmp(app->sendbuffer, PACKET_SIZE); // DEBUG
-		if (send_packet(sock, app->sendbuffer, &app->dest_addr) < 0)
+		if (send_packet(app->socket, app->sendbuffer, &app->dest_addr) < 0)
 			continue ;
 		app->sent_packets++;
-		bytes = receive_packet(sock, app->recvbuffer, sizeof(app->recvbuffer),
+		bytes = receive_packet(app->socket, app->recvbuffer, sizeof(app->recvbuffer),
 				&app->reply_addr, app->sequence, &app->end);
 		// print_ip(app->recvbuffer, bytes); // DEBUG
 		if (bytes < 0)
@@ -107,5 +109,6 @@ int	ping_loop(int sock, t_ft_ping *app)
 			process_packet(bytes, app);
 		sleep(1);
 	}
+	clean_up();
 	return (0);
 }

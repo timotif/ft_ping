@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/29 18:30:09 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/29 20:51:22 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/10/31 21:40:32 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,33 +20,28 @@ int	init_socket(void)
 	raw_socket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 	if (raw_socket <= 0)
 	{
-		perror("socket");
-		fprintf(stderr, "Hint: raw sockets require root privileges\n");
+		perror("ping");
+		fprintf(stderr, "Lacking privilege for icmp socket.\n");
 		exit (1);
 	}
-	if (set_socket_options(raw_socket))
-	{
-		perror("socket");
-		exit (1);
-	}
+	set_socket_options(raw_socket);
 	return (raw_socket);
 }
 
 int	set_socket_options(int raw_socket)
 {
-	int				error;
-	struct timeval	timeout;
+	// struct timeval	timeout;
 	int				enable;
 
-	error = 0;
-	timeout.tv_sec = SOCKET_TIMEOUT;
-	timeout.tv_usec = 0;
-	if (setsockopt(raw_socket, SOL_SOCKET, SO_RCVTIMEO, 
-			&timeout, sizeof(timeout)) < 0)
-		error = 1;
+	// timeout.tv_sec = SOCKET_TIMEOUT;
+	// timeout.tv_usec = 0;
+	// if (setsockopt(raw_socket, SOL_SOCKET, SO_RCVTIMEO, 
+	// 		&timeout, sizeof(timeout)) < 0)
+	// 	error(0, errno, "setsockopt (SO_RCVTIMEO)");
+	// TODO: SO_BROADCAST if I want to support broadcast ping
 	enable = 1;
 	if (setsockopt(raw_socket, SOL_SOCKET, SO_TIMESTAMP,
-			&enable, sizeof(enable)) < 0)
-		error = 1;
-	return (error);
+			&enable, sizeof(enable)) != 0)
+		error(0, errno, "setsockopt (SO_TIMESTAMP)");
+	return (0);
 }

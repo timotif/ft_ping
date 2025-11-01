@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:54:32 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/30 13:14:56 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/01 09:41:03 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,32 +38,37 @@ uint16_t	buffer_get_sequence(uint8_t *buffer, int len)
 	return (icmp_get_sequence(icmp_header));
 }
 
-void	interrupt(int signum)
+void	clean_up()
 {
 	float		loss;
 	t_ft_ping	*app;
-
+	
 	app = g_ft_ping;
-	(void) signum;
 	loss = 0.0;
 	if (g_ft_ping->sent_packets > 0)
-		loss = 100 - (g_ft_ping->rcv_packets * 100 / g_ft_ping->sent_packets);
+	loss = 100 - (g_ft_ping->rcv_packets * 100 / g_ft_ping->sent_packets);
 	/*	--- 1.1.1.1 ping statistics ---
-		1 packets transmitted, 1 packets received, 0% packet loss */
+	1 packets transmitted, 1 packets received, 0% packet loss */
 	printf("--- %s ping statistics ---\n", g_ft_ping->hostname);
 	printf("%d packets transmitted, %d packets received, %.1f%% packet loss\n",
-		g_ft_ping->sent_packets, g_ft_ping->rcv_packets, loss);
+	g_ft_ping->sent_packets, g_ft_ping->rcv_packets, loss);
 	/* round-trip min/avg/max/stddev = 31.634/31.634/31.634/0.000 ms */
 	printf("round-trip min/avg/max/stddev = %lld.%lld/%lld.%lld/%lld.%lld/%lld.%lld ms\n",
-		app->stats[MIN] / 1000, app->stats[MIN] % 1000,
-		app->stats[AVG] / 1000, app->stats[AVG] % 1000,
-		app->stats[MAX] / 1000, app->stats[MAX] % 1000,
-		app->stats[STDDEV] / 1000, app->stats[STDDEV] % 1000);
+	app->stats[MIN] / 1000, app->stats[MIN] % 1000,
+	app->stats[AVG] / 1000, app->stats[AVG] % 1000,
+	app->stats[MAX] / 1000, app->stats[MAX] % 1000,
+	app->stats[STDDEV] / 1000, app->stats[STDDEV] % 1000);
 	if (g_ft_ping->socket >= 0)
-		close(g_ft_ping->socket);
+	close(g_ft_ping->socket);
 	freeaddrinfo(g_ft_ping->res);
 	g_ft_ping = NULL;
-	exit (0);
+		exit (0);
+}
+		
+void	interrupt(int signum)
+{
+	(void) signum; // Required by signal() but unused
+	g_ft_ping->stop = 1;
 }
 
 void	print_addresses(struct addrinfo *res)
@@ -132,3 +137,6 @@ int	main(int ac, char **av)
 	signal(SIGINT, interrupt);
 	return (ping_loop(app.socket, &app));
 }
+
+/*ping: Lacking privilege for icmp socket.*/
+/* TODO: duplicates (ex with broadcast) */

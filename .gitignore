@@ -6,3 +6,8 @@ hello
 a.out
 CLAUDE.md
 .claude
+inetutils*
+bin/
+libexec/
+share/
+*.txt
