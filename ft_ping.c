@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:54:32 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/01 09:41:03 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/01 10:24:08 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,15 +24,17 @@ void	setup_destination(t_ft_ping *app, uint32_t dest_ip)
 	dest->sin_addr.s_addr = dest_ip;
 }
 
-uint16_t	buffer_get_sequence(uint8_t *buffer, int len)
+int16_t	buffer_get_sequence(uint8_t *buffer, int len)
 {
 	t_ip_header		*ip_header;
 	t_icmp_header	*icmp_header;
 	int				offset;
 
 	if (!buffer || !len)
-		return (0);
+		return (-1);
 	ip_header = (t_ip_header *)buffer;
+	if (ip_header->ihl < 5 || len < ip_header->ihl * 4 + sizeof(t_icmp_header))
+		return (-1);
 	offset = ip_header->ihl * 4;
 	icmp_header = (t_icmp_header *)(buffer + offset);
 	return (icmp_get_sequence(icmp_header));
@@ -135,7 +137,7 @@ int	main(int ac, char **av)
 		printf(", id 0x%04x = %d", app.pid, app.pid);
 	printf("\n");
 	signal(SIGINT, interrupt);
-	return (ping_loop(app.socket, &app));
+	return (ping_loop(&app));
 }
 
 /*ping: Lacking privilege for icmp socket.*/

@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/01 09:39:32 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/01 10:20:11 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -129,5 +129,5 @@ char	*ip_get_source_addr(t_ip_header *ip_header);
 /***** ICMP *****/
 uint16_t	icmp_get_sequence(t_icmp_header *icmp_header);
 
-uint16_t	buffer_get_sequence(uint8_t *buffer, int len);
+int16_t	buffer_get_sequence(uint8_t *buffer, int len);
 #endif
