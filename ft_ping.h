@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 18:39:56 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 21:41:46 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,9 +28,9 @@
 # include <signal.h>
 # include <assert.h>
 # include <math.h>
-# include <error.h>
 # include <sys/select.h>
 # include <ctype.h>
+# include <getopt.h>
 
 # define ICMP_HEADER_SIZE 8
 # define PAYLOAD_SIZE (PACKET_SIZE - ICMP_HEADER_SIZE)
@@ -64,7 +64,10 @@ enum	e_flags
 	INTERVAL,
 	QUIET,
 	TIMEOUT,
-	FLAGS_COUNT
+	TTL,
+	USAGE,
+	FLAGS_COUNT,
+	ONLY_LONG = 255
 };
 
 // Application state - tracks metadata, not the headers themselves
@@ -80,6 +83,7 @@ typedef struct s_ft_ping
 	uint16_t				pid;           				// process ID for echo_id
 	uint16_t				sequence;      				// current sequence number
 	uint8_t					rcv_map[8192];				// bitmap to track duplicates
+	size_t					packet_size;
 	int						sent_packets;
 	int						rcv_packets;
 	int						dup_packets;
@@ -109,6 +113,7 @@ int		set_socket_options(int raw_socket);
 void		print_bytes(uint8_t *bytes, size_t len, char *header);
 void		print_icmp(uint8_t *bytes, size_t len);
 void		print_ip(uint8_t *byes, size_t len);
+void		print_help(char *prog_name);
 void		print_usage(char *prog_name);
 void		print_credits();
 void		print_addr(struct sockaddr_in *addr);

@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:54:32 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 16:44:23 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 21:56:10 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,6 +118,7 @@ int	resolv_hostname(const char *hostname, t_ft_ping *app)
 static void	init_app(t_ft_ping *app)
 {
 	memset(app, 0, sizeof(*app));
+	app->packet_size = PACKET_SIZE;
 	app->flags[INTERVAL] = INTERVAL_MS;
 }
 
@@ -137,10 +138,10 @@ int	main(int ac, char **av)
 	}
 	app.socket = init_socket();
 	app.pid = getpid();
-	printf("PING %s (%s): %d data bytes",
+	printf("PING %s (%s): %ld data bytes",
 		app.hostname,
 		app.ip_str,
-		PAYLOAD_SIZE
+		app.packet_size - ICMP_HEADER_SIZE
 		);
 	if (app.flags[VERBOSE])
 		printf(", id 0x%04x = %d", app.pid, app.pid);

@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 16:57:57 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 22:18:16 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,7 +68,7 @@ void	ping_success(t_ip_header *ip_header, t_ft_ping *app, int rcv_seq)
 		+ sizeof(t_icmp_header), sizeof(send_time));
 	time = elapsed_time(send_time, app->end);
 	update_stats(app, time);
-	print_echo(PACKET_SIZE, ip_header, rcv_seq, time, dup);
+	print_echo(app->packet_size, ip_header, rcv_seq, time, dup);
 }
 
 uint8_t	*extract_embedded_packet(uint8_t *error_packet, int *embedded_len)
@@ -200,14 +200,14 @@ void	prepare_payload(void *payload, int size)
 
 int	send_echo(t_ft_ping *app)
 {
-	char			payload[PAYLOAD_SIZE];
+	char			payload[app->packet_size - ICMP_HEADER_SIZE];
 
 	memset(&app->end, 0, sizeof(app->end));
 	// Prepare packet (timestamp embedded in payload)
-	prepare_payload(payload, PAYLOAD_SIZE);
+	prepare_payload(payload, app->packet_size - ICMP_HEADER_SIZE);
 	prepare_echo_request_packet(payload, app->sendbuffer, app->sequence,
 		app->pid);
-	// print_icmp(app->sendbuffer, PACKET_SIZE); // DEBUG
+	// print_icmp(app->sendbuffer, app->packet_size); // DEBUG
 	if (send_packet(app->socket, app->sendbuffer, &app->dest_addr) < 0)
 		return (-1);
 	app->sent_packets++;
@@ -272,7 +272,7 @@ void	handle_packet_reception(t_ft_ping *app)
 	int	bytes;
 	int	rcv_seq;
 
-	bytes = receive_packet(app->socket, app->recvbuffer, 
+	bytes = receive_packet(app->socket, app->recvbuffer,
 			sizeof(app->recvbuffer), &app->reply_addr, &app->end);
 	if (bytes < 0)
 	{
@@ -284,11 +284,9 @@ void	handle_packet_reception(t_ft_ping *app)
 	else
 	{
 		rcv_seq = buffer_get_sequence(app->recvbuffer, bytes);
-		if (rcv_seq <= app->sequence && rcv_seq >= 0) // accept all packets
+		if (rcv_seq <= app->sequence && rcv_seq >= 0)
 			process_packet(bytes, app, rcv_seq);
 	}
-	if (app->flags[COUNT] && app->sent_packets >= app->flags[COUNT])
-		app->stop = 1;
 	if (app->flags[TIMEOUT] && ping_timeout(&app->start, app->flags[TIMEOUT]))
 		app->stop = 1;
 }
@@ -296,7 +294,10 @@ void	handle_packet_reception(t_ft_ping *app)
 void	handle_select_error(void)
 {
 	if (errno != EINTR)
-		error(EXIT_FAILURE, errno, "select failed");
+	{
+		fprintf(stderr, "ft_ping: select failed: %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
 }
 
 void	send_next_packet(t_ft_ping *app, struct timeval *last)

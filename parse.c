@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 11:05:14 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 17:00:08 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 21:41:13 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,6 +65,19 @@ static uint16_t	parse_interval(char *optarg, char *prog_name)
 	return ((uint16_t)round(value * 1000.0));
 }
 
+static struct option s_long_options[] = 
+{
+	{"count", 		required_argument,	0, 'c'},
+	{"interval",	required_argument, 	0, 'i'},
+	{"ttl",			required_argument,	0, TTL + ONLY_LONG}, // Options with only long value start from 256
+	{"verbose",		no_argument,		0, 'v'},
+	{"timeout", 	required_argument,	0, 'w'},
+	{"quiet", 		no_argument,		0, 'q'},
+	{"help", 		no_argument,		0, '?'},
+	{"usage",		no_argument,		0, USAGE + ONLY_LONG},
+	{0, 0, 0, 0}
+};
+
 /**
  * Parse command line arguments using POSIX getopt()
  * Option string "Vvc:i:qw:?":
@@ -74,13 +87,16 @@ static uint16_t	parse_interval(char *optarg, char *prog_name)
  *   - 'i:' = interval option (requires argument)
  *   - 'q' = quiet flag (no argument)
  *   - 'w:' = timeout option (requires argument)
+ *   - 'ttl:' = ttl option (requires argument, long-only)
  *   - '?' = help flag (no argument)
  */
 void	parse_args(int ac, char **av, t_ft_ping *app)
 {
 	int	opt;
+	int	option_index;
 
-	while ((opt = getopt(ac, av, "Vvc:i:qw:?")) != -1)
+	while ((opt = getopt_long(ac, av, "Vvc:i:qw:?",
+			s_long_options, &option_index)) != -1)
 	{
 		if (opt == 'v')
 			app->flags[VERBOSE] = 1;
@@ -98,9 +114,16 @@ void	parse_args(int ac, char **av, t_ft_ping *app)
 		else if (opt == 'w')
 			app->flags[TIMEOUT] = parse_uint16(optarg, av[0], "timeout",
 				1, 65535);
-		else if (opt == '?')
+		else if (opt == TTL + ONLY_LONG)
+			app->flags[TTL] = parse_uint16(optarg, av[0], "ttl", 1, 255);
+		else if (opt == USAGE + ONLY_LONG)
 		{
 			print_usage(av[0]);
+			exit(0);
+		}
+		else if (opt == '?')
+		{
+			print_help(av[0]);
 			exit(0);
 		}
 		else
@@ -114,7 +137,7 @@ void	parse_args(int ac, char **av, t_ft_ping *app)
 	else
 	{
 		fprintf(stderr, "%s: missing hostname\n", av[0]);
-		print_usage(av[0]);
+		print_help(av[0]);
 		exit(1);
 	}
 	if (optind + 1 < ac)

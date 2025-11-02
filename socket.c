@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/29 18:30:09 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/01 14:55:58 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 21:26:35 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,20 +30,27 @@ int	init_socket(void)
 
 int	set_socket_options(int raw_socket)
 {
-	// struct timeval	timeout;
-	int				enable;
+	int	enable;
 
-	// timeout.tv_sec = SOCKET_TIMEOUT;
-	// timeout.tv_usec = 0;
-	// if (setsockopt(raw_socket, SOL_SOCKET, SO_RCVTIMEO, 
-	// 		&timeout, sizeof(timeout)) < 0)
-	// 	error(0, errno, "setsockopt (SO_RCVTIMEO)");
-	// TODO: SO_BROADCAST if I want to support broadcast ping
 	enable = 1;
 	if (setsockopt(raw_socket, SOL_SOCKET, SO_TIMESTAMP,
 			&enable, sizeof(enable)) != 0)
-		error(0, errno, "setsockopt (SO_TIMESTAMP)");
-	if (setsockopt(raw_socket, SOL_SOCKET, SO_BROADCAST, (char *) &enable, sizeof(enable)) != 0)
-		error(0, errno, "setsockopt (SO_BROADCAST)");
+	{
+		fprintf(stderr, "ft_ping: setsockopt (SO_TIMESTAMP): %s\n",
+			strerror(errno));
+	}
+	if (setsockopt(raw_socket, SOL_SOCKET, SO_BROADCAST,
+			(char *)&enable, sizeof(enable)) != 0)
+	{
+		fprintf(stderr, "ft_ping: setsockopt (SO_BROADCAST): %s\n",
+			strerror(errno));
+	}
+	if (g_ft_ping->flags[TTL])
+	{
+		if (setsockopt(raw_socket, IPPROTO_IP, IP_TTL,
+				&g_ft_ping->flags[TTL], sizeof(g_ft_ping->flags[TTL]) != 0))
+			fprintf(stderr, "ft_ping: setsockopt (IP_TTL): %s\n",
+				strerror(errno));
+	}
 	return (0);
 }

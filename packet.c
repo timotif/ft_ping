@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:48:54 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 11:24:17 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 21:56:33 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,7 +76,7 @@ int	send_packet(int sock, uint8_t *sendbuffer, struct sockaddr_in *addr)
 {
 	int	bytes;
 
-	bytes = sendto(sock, sendbuffer, PACKET_SIZE, 
+	bytes = sendto(sock, sendbuffer, g_ft_ping->packet_size, 
 			0, (struct sockaddr *)addr, sizeof(*addr));
 	if (bytes < 0)
 		perror("send packet");
@@ -121,14 +121,14 @@ void	prepare_echo_request_packet(void *payload,
 	t_icmp_header	*packet;
 	size_t			packet_size;
 	
-	packet_size = PACKET_SIZE;
+	packet_size = g_ft_ping->packet_size;
 	memset(sendbuffer, 0, packet_size);
 	packet = (t_icmp_header*) sendbuffer;
 	packet->type = ICMP_ECHO; // 8
 	packet->code = 0;
 	packet->un.echo.id = htons(pid);
 	packet->un.echo.sequence = htons(seq);
-	memcpy(sendbuffer + sizeof(t_icmp_header), payload, PAYLOAD_SIZE);
+	memcpy(sendbuffer + sizeof(t_icmp_header), payload, packet_size - ICMP_HEADER_SIZE);
 	assert(packet->checksum == 0);
 	packet->checksum = calculate_checksum((uint16_t*) packet, packet_size);
 }

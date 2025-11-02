@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 10:58:49 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 15:47:29 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 21:45:55 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -157,14 +157,34 @@ void	print_icmp(uint8_t *bytes, size_t len)
 	printf("\n");
 }
 
+void	print_help(char *prog_name)
+{
+	printf("Usage: sudo %s [OPTION...] [HOST...]\n", prog_name);
+	printf("Send ICMP ECHO_REQUEST packets to network hosts.\n\n");
+	printf(" Options valid for all request types:\n\n");
+	printf("  -c,	--count=NUMBER		after sending NUMBER packets\n");
+	printf("  -i,	--interval=NUMBER	wait NUMBER seconds between sending each packet\n");
+	printf("     	--ttl=N				specify N as time-to-live\n");
+	printf("  -v,	--verbose			verbose output\n");
+	printf("  -w,	--timeout=N			stop after N seconds\n");
+	printf("\n");
+	printf(" Options valid for --echo requests:\n\n");
+	printf("  -q,	--quiet				quiet output\n");
+	printf("\n");
+	printf("  -?,	--help				give this help list\n");
+	printf("     	--usage				give a short usage message\n");
+	printf("  -V						print program version\n");
+} // TODO: fix alignment
+
 void	print_usage(char *prog_name)
 {
-	fprintf(stderr, "Usage:\n\tsudo %s [-?vV] [-c NUMBER] HOST\n", prog_name);
+	printf("Usage: sudo %s [-vq?V] [-c NUMBER] [-i NUMBER] [-w N] [--ttl=N] ", prog_name);
+	printf("HOST ...\n");
 }
 
 void	print_credits()
 {
-	printf("FT_PING (42Berlin) v0.1\n");
+	printf("FT_PING @42Berlin v0.1\n");
 	printf("Copyright (C) 2025 - All rights reserved (but we're not that serious about it)\n");
 	printf("License: WTFPL - Do What The F*** You Want To Public License\n");
 	printf("This program is free software. You can redistribute it and/or modify it\n");
