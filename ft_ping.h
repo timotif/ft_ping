@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 16:27:05 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 16:47:43 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,6 +63,7 @@ enum	e_flags
 	COUNT,
 	INTERVAL,
 	QUIET,
+	TIMEOUT,
 	FLAGS_COUNT
 };
 
@@ -129,6 +130,7 @@ void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header,
 			int bytes, t_ft_ping *app);
 void	ping_success(t_ip_header *ip_header, t_ft_ping *app, int rcv_seq);
 int		ping_loop(t_ft_ping *app);
+int		ping_timeout(struct timeval *start_time, int timeout);
 
 /***** IP *****/
 char	*ip_get_source_addr(t_ip_header *ip_header);

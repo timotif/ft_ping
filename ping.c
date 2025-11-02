@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 16:28:44 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 16:57:57 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -273,7 +273,7 @@ void	handle_packet_reception(t_ft_ping *app)
 	int	rcv_seq;
 
 	bytes = receive_packet(app->socket, app->recvbuffer, 
-					sizeof(app->recvbuffer), &app->reply_addr, &app->end);
+			sizeof(app->recvbuffer), &app->reply_addr, &app->end);
 	if (bytes < 0)
 	{
 		if (errno == EWOULDBLOCK)
@@ -288,6 +288,8 @@ void	handle_packet_reception(t_ft_ping *app)
 			process_packet(bytes, app, rcv_seq);
 	}
 	if (app->flags[COUNT] && app->sent_packets >= app->flags[COUNT])
+		app->stop = 1;
+	if (app->flags[TIMEOUT] && ping_timeout(&app->start, app->flags[TIMEOUT]))
 		app->stop = 1;
 }
 
@@ -304,9 +306,29 @@ void	send_next_packet(t_ft_ping *app, struct timeval *last)
 		app->stop = 1;
 		return ;
 	}
+	if (app->flags[TIMEOUT] && ping_timeout(&app->start, app->flags[TIMEOUT]))
+	{
+		app->stop = 1;
+		return ;
+	}
 	app->sequence++;
 	send_echo(app);
 	gettimeofday(last, NULL);
+}
+
+int	ping_timeout(struct timeval *start_time, int timeout)
+{
+	struct timeval	now;
+	long long		elapsed;
+
+	gettimeofday(&now, NULL);
+	if (timeout)
+	{
+		elapsed = elapsed_time(*start_time, now) / 1000000; // in seconds
+		if (elapsed >= timeout)
+			return (1);
+	}
+	return (0);
 }
 
 int	ping_loop(t_ft_ping *app)
@@ -316,6 +338,7 @@ int	ping_loop(t_ft_ping *app)
 	t_wait_result	wait_result;
 
 	initialize_timing(app->flags[INTERVAL], &interval, &last, &resp_time);
+	gettimeofday(&app->start, NULL);
 	app->sequence = 0;
 	send_echo(app);
 	while (1 && !app->stop)
