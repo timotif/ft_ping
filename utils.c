@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 10:58:49 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/01 22:42:39 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 09:12:50 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,7 @@ void	print_bytes(uint8_t *bytes, size_t len, char *header)
 }
 
 /*
+Example:
 92 bytes from tfregni-ryzen (10.0.1.50): Destination Host Unreachable
 IP Hdr Dump:
  4500 0054 257f 4000 4001 fdfa 0a00 0132 0a00 01fe 
@@ -44,41 +45,42 @@ void	packet_dump(uint8_t *bytes, size_t len)
 	char		source_addr[INET_ADDRSTRLEN], dest_addr[INET_ADDRSTRLEN];
 
 	ip = (t_ip_header *)bytes;
-	header_len = ip->ihl * 4;
+	header_len = ip->ihl << 2;
 	printf("IP Hdr Dump:\n");
 	for (size_t i = 0; i < len && i < header_len; i++)
-	{
-		if (i % 2 == 0)
-			printf(" ");
-		printf("%02x", bytes[i]);	
-	}
+		printf("%02x%s", bytes[i], (i % 2 == 0)? " ": ""); // Group bytes by 2
+	printf("\n");
 	uint16_t frag_off = ntohs(ip->frag_off);
 	inet_ntop(AF_INET, &ip->saddr, source_addr, INET_ADDRSTRLEN);
 	inet_ntop(AF_INET, &ip->daddr, dest_addr, INET_ADDRSTRLEN);
-	printf("\n");
-	printf("Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src      Dst     Data\n");
+	printf("Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src\tDst\tData\n");
 	printf(" %01x  %01x  %02x %04x ", ip->version, ip->ihl, ip->tos, ntohs(ip->tot_len));
 	printf("%04x   %01x %04x  ", ntohs(ip->id), (frag_off >> 13) & 0x7, frag_off & 0x1fff);
 	printf("%02x  %02x %04x ", ip->ttl, ip->protocol, ntohs(ip->check));
 	printf("%s  %s\n", source_addr, dest_addr);
-	bytes += header_len;
-	switch (ip->protocol) // check /cat/protocols
+	bytes += header_len; // point to options
+	if (header_len > sizeof(*ip))
 	{
-		case (1): // ICMP
-		{
-			t_icmp_header *icmp = (t_icmp_header *)bytes;
-			printf("ICMP: ");
-			printf("type %d, code %d, size %ld", 
-				icmp->type, icmp->code, len - header_len);
-			if (icmp->type == ICMP_ECHO || icmp->type == ICMP_ECHOREPLY)
-				printf(", id 0x%04x, seq 0x%04x\n", ntohs(icmp->un.echo.id),
-				ntohs(icmp->un.echo.sequence));
-			else
-				printf("icmp type not implemented");
+		while (header_len-- > sizeof(*ip))
+			printf("%02x", *bytes++);
+	}
+	if (ip->protocol != 1) // Supporting only ICMP for the moment
+	{
+		fprintf(stderr, "unsupported protocol: %d\n", ip->protocol);
+		return ;
+	}
+	t_icmp_header *icmp = (t_icmp_header *)bytes;
+	printf("ICMP: ");
+	printf("type %d, code %d, size %ld", 
+		icmp->type, icmp->code, len - header_len);
+	switch (icmp->type)
+	{
+		case (ICMP_ECHO):
+			printf(", id 0x%04x, seq 0x%04x\n", ntohs(icmp->un.echo.id),
+					ntohs(icmp->un.echo.sequence));
 			break;
-		}
-		default:
-			fprintf(stderr, "Unsupported protocol");
+		case (ICMP_ECHOREPLY):
+			printf("Echo Reply\n");
 			break;
 	}
 }

@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/01 21:05:10 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 11:23:59 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,19 +69,101 @@ void	ping_success(t_ip_header *ip_header, t_ft_ping *app, int rcv_seq)
 	print_echo(PACKET_SIZE, ip_header, rcv_seq, time, dup);
 }
 
+/* 
+Handle ICMP error messages
+Example: 56 bytes from 192.168.1.1: icmp_seq=3 Destination Host Unreachable
+*/
 void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header, 
 		int bytes, t_ft_ping *app)
 {
-	(void) bytes;
+	int	hlen, datalen;
+	
+	hlen = ip_header->ihl << 2;
+	datalen = bytes - hlen;
+	if (app->flags[VERBOSE])
+		packet_dump((uint8_t *)ip_header, bytes);
+	// Bytes are the ICMP packet size, not the full IP packet size
+	printf("%d bytes from %s: icmp_seq=%d ", datalen,
+			ip_get_source_addr(ip_header), icmp_get_sequence(icmp_header));
 	switch (icmp_header->type)
 	{
 		case ICMP_DEST_UNREACH:
-			if (ntohs(icmp_header->un.echo.id) == app->pid)
-				printf("From %s icmp_seq=%d Destination Unreachable\n",
-					ip_get_source_addr(ip_header), 
-					icmp_get_sequence(icmp_header));
-			return;
+			switch (icmp_header->code)
+			{
+				case (ICMP_HOST_UNREACH):
+					printf("Destination Host Unreachable\n");
+					break;
+				case (ICMP_NET_UNREACH):
+					printf("Destination Net Unreachable\n");
+					break;
+				case (ICMP_PROT_UNREACH):
+					printf("Destination Protocol Unreachable\n");
+					break;
+				case (ICMP_PORT_UNREACH):
+					printf("Destination Port Unreachable\n");
+					break;
+				case (ICMP_FRAG_NEEDED):
+					printf("Fragmentation needed and DF set\n");
+					break;
+				case (ICMP_SR_FAILED):
+					printf("Source Route Failed\n");
+					break;
+				case (ICMP_NET_UNKNOWN):
+					printf("Network Unknown\n");
+					break;
+				case (ICMP_HOST_UNKNOWN):
+					printf("Host Unknown\n");
+					break;
+				case (ICMP_HOST_ISOLATED):
+					printf("Host Isolated\n");
+					break;
+				case (ICMP_NET_UNR_TOS):
+					printf("Destination Network Unreachable At This TOS\n");
+					break;
+				case (ICMP_HOST_UNR_TOS):
+					printf("Destination Host Unreachable At This TOS\n");
+					break;
+				default:
+					printf("Destination Unreachable\n");
+					break;
+			}
+			break;
+		case (ICMP_REDIRECT):
+			switch (icmp_header->code)
+			{
+				case (ICMP_REDIR_NET):
+					printf("Redirect Network\n");
+					break;
+				case (ICMP_REDIR_HOST):
+					printf("Redirect Host\n");
+					break;
+				case (ICMP_REDIR_NETTOS):
+					printf("Redirect Type of Service and Network\n");
+					break;
+				case (ICMP_REDIR_HOSTTOS):
+					printf("Redirect Type of Service and Host\n");
+					break;
+				default:
+					printf("Redirect Message\n");
+					break;
+			}
+			break;
+		case (ICMP_TIME_EXCEEDED):
+			switch (icmp_header->code)
+			{
+				case (ICMP_EXC_TTL):
+					printf("Time to live exceeded\n");
+					break;
+				case (ICMP_EXC_FRAGTIME):
+					printf("Frag reassembly time exceeded\n");
+					break;
+				default:
+					printf("Time Exceeded\n");
+					break;
+			}
+			break;
 		default:
+			fprintf(stderr, "Unknown Code: %d\n", icmp_header->code);
 			break;
 	}
 }

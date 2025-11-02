@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/01 22:18:17 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 11:24:07 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,7 +65,7 @@ enum	e_flags
 // Application state - tracks metadata, not the headers themselves
 typedef struct s_ft_ping
 {
-	volatile sig_atomic_t	stop;
+	volatile sig_atomic_t	stop; /* Written atomically (an int can be compiled in more assembly instructions that might be interrupted in the middle)*/
 	uint8_t					flags[FLAGS_COUNT]; // allocates for the amount of flags I implemented
 	const char				*hostname;
 	char					ip_str[INET_ADDRSTRLEN];

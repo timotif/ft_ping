@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:48:54 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/01 21:27:59 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 11:24:17 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,20 @@ uint32_t	calculate_checksum(uint16_t *data, uint32_t len)
 	return (~sum);
 }
 
+int	verify_checksum(uint16_t *data, uint32_t len)
+{
+	uint32_t		checksum_check;
+	uint32_t		checksum_rcv;
+	t_icmp_header	*icmp_header;
+	
+	icmp_header = (t_icmp_header *)data;
+	checksum_rcv = icmp_header->checksum & 0xffff;
+	icmp_header->checksum = 0;
+	checksum_check = calculate_checksum((uint16_t *)icmp_header, len) & 0xffff;
+	icmp_header->checksum = checksum_rcv;
+	return (checksum_rcv == checksum_check);
+}
+
 void	process_packet(int bytes, t_ft_ping *app, int rcv_seq)
 {
 	int				offset;
@@ -38,16 +52,23 @@ void	process_packet(int bytes, t_ft_ping *app, int rcv_seq)
 	if (!ip_is_valid(app->recvbuffer, bytes))
 		return ;
 	ip_header = (t_ip_header *) app->recvbuffer;
-	offset = ip_header->ihl * 4;
+	offset = ip_header->ihl << 2;
 	icmp_header = (struct icmphdr *)(app->recvbuffer + offset);
-	if (ntohs(icmp_header->un.echo.id) == app->pid)
+	if (!verify_checksum((uint16_t *)icmp_header, bytes - offset))
+		fprintf(stderr, "checksum mismatch from %s\n", inet_ntoa(*(struct in_addr *)&ip_header->saddr));
+	switch (icmp_header->type)
 	{
-		packet_dump(app->recvbuffer, bytes); // DEBUG
-		if (icmp_header->type == ICMP_ECHOREPLY)
-			ping_success(ip_header, app, rcv_seq);
+		case ICMP_ECHOREPLY:
+			if (ntohs(icmp_header->un.echo.id) == app->pid)
+				// packet_dump(app->recvbuffer, bytes); // DEBUG
+				ping_success(ip_header, app, rcv_seq);
+			break ;
+		case ICMP_ECHO:
+			break ; // Ignore our own packet
+		default:
+			ping_fail(ip_header, icmp_header, bytes, app);
+			break ;		
 	}
-	else
-		ping_fail(ip_header, icmp_header, bytes, app);
 }
 
 
