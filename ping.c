@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 12:42:50 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 13:07:27 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,7 +77,7 @@ uint8_t	*extract_embedded_packet(uint8_t *error_packet, int *embedded_len)
 	ip = (t_ip_header *)error_packet;
 	hlen = ip->ihl << 2;
 	*embedded_len = *embedded_len - hlen - ICMP_HEADER_SIZE;
-	return (error_packet + *embedded_len);
+	return (error_packet + hlen + ICMP_HEADER_SIZE);
 }
 
 /* 
