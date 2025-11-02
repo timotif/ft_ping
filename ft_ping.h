@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 15:55:32 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 16:27:05 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,6 +62,7 @@ enum	e_flags
 	VERBOSE,
 	COUNT,
 	INTERVAL,
+	QUIET,
 	FLAGS_COUNT
 };
 

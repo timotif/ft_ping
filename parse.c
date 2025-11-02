@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 11:05:14 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 16:19:16 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 16:27:01 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,7 +63,7 @@ void	parse_args(int ac, char **av, t_ft_ping *app)
 	int		opt;
 	
 	// getopt() processes options until it finds a non-option or reaches end
-	while ((opt = getopt(ac, av, "Vvc:i:?")) != -1)
+	while ((opt = getopt(ac, av, "Vvc:i:?q")) != -1)
 	{
 		switch (opt)
 		{
@@ -99,6 +99,9 @@ void	parse_args(int ac, char **av, t_ft_ping *app)
 				}
 				app->flags[INTERVAL] = (uint16_t)round(value * 1000);
 				printf("app->flags[INTERVAL] = %u ms\n", app->flags[INTERVAL]); // DEBUG
+				break ;
+			case 'q':
+				app->flags[QUIET] = 1;
 				break ;
 			case 'V':
 				print_credits();

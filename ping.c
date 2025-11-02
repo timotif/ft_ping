@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 16:20:05 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 16:28:44 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,8 @@ void	update_stats(t_ft_ping *app, long long time)
 void	print_echo(int psize, t_ip_header *ip_header, int rcv_seq,
 	long long time, int dup)
 {
+	if (g_ft_ping->flags[QUIET])
+		return ;
 	/* 64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.022 ms */
 	printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%lld.%03lld ms",
 		psize, ip_get_source_addr(ip_header),
@@ -88,7 +90,9 @@ void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header,
 		int bytes, t_ft_ping *app)
 {
 	int	hlen, datalen, embedded_len;
-	
+
+	if (app->flags[QUIET])
+		return ;
 	hlen = ip_header->ihl << 2;
 	datalen = bytes - hlen;
 	// Bytes are the ICMP packet size, not the full IP packet size
