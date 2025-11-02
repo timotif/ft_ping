@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 11:24:07 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 12:32:50 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,9 +31,9 @@
 # include <error.h>
 # include <sys/select.h>
 
-# define PAYLOAD_SIZE (PACKET_SIZE - 8)
+# define ICMP_HEADER_SIZE 8
+# define PAYLOAD_SIZE (PACKET_SIZE - ICMP_HEADER_SIZE)
 # define PACKET_SIZE 64
-# define SOCKET_TIMEOUT 1
 # define MAX_IP_HEADER_SIZE 60
 # define RECV_BUFFER_SIZE (PACKET_SIZE + MAX_IP_HEADER_SIZE)
 # define INTERVAL 1000

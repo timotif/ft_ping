@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 10:58:49 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 09:12:50 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 12:57:37 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,20 +41,21 @@ ICMP: type 8, code 0, size 64, id 0x8a0e, seq 0x0000
 void	packet_dump(uint8_t *bytes, size_t len)
 {
 	t_ip_header	*ip;
-	size_t		header_len;
+	size_t		ip_len, header_len;
 	char		source_addr[INET_ADDRSTRLEN], dest_addr[INET_ADDRSTRLEN];
 
 	ip = (t_ip_header *)bytes;
 	header_len = ip->ihl << 2;
-	printf("IP Hdr Dump:\n");
+	ip_len = ntohs(ip->tot_len);
+	printf("IP Hdr Dump:\n ");
 	for (size_t i = 0; i < len && i < header_len; i++)
-		printf("%02x%s", bytes[i], (i % 2 == 0)? " ": ""); // Group bytes by 2
+		printf("%02x%s", (uint16_t)bytes[i], (i % 2)? " ": ""); // Group bytes by 2
 	printf("\n");
 	uint16_t frag_off = ntohs(ip->frag_off);
 	inet_ntop(AF_INET, &ip->saddr, source_addr, INET_ADDRSTRLEN);
 	inet_ntop(AF_INET, &ip->daddr, dest_addr, INET_ADDRSTRLEN);
 	printf("Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src\tDst\tData\n");
-	printf(" %01x  %01x  %02x %04x ", ip->version, ip->ihl, ip->tos, ntohs(ip->tot_len));
+	printf(" %01x  %01x  %02x %04lx ", ip->version, ip->ihl, ip->tos, ip_len);
 	printf("%04x   %01x %04x  ", ntohs(ip->id), (frag_off >> 13) & 0x7, frag_off & 0x1fff);
 	printf("%02x  %02x %04x ", ip->ttl, ip->protocol, ntohs(ip->check));
 	printf("%s  %s\n", source_addr, dest_addr);
@@ -72,7 +73,7 @@ void	packet_dump(uint8_t *bytes, size_t len)
 	t_icmp_header *icmp = (t_icmp_header *)bytes;
 	printf("ICMP: ");
 	printf("type %d, code %d, size %ld", 
-		icmp->type, icmp->code, len - header_len);
+		icmp->type, icmp->code, ip_len - header_len);
 	switch (icmp->type)
 	{
 		case (ICMP_ECHO):

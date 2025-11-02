@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 11:23:59 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 12:42:50 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,6 +69,17 @@ void	ping_success(t_ip_header *ip_header, t_ft_ping *app, int rcv_seq)
 	print_echo(PACKET_SIZE, ip_header, rcv_seq, time, dup);
 }
 
+uint8_t	*extract_embedded_packet(uint8_t *error_packet, int *embedded_len)
+{
+	t_ip_header	*ip;
+	int			hlen;
+
+	ip = (t_ip_header *)error_packet;
+	hlen = ip->ihl << 2;
+	*embedded_len = *embedded_len - hlen - ICMP_HEADER_SIZE;
+	return (error_packet + *embedded_len);
+}
+
 /* 
 Handle ICMP error messages
 Example: 56 bytes from 192.168.1.1: icmp_seq=3 Destination Host Unreachable
@@ -76,12 +87,10 @@ Example: 56 bytes from 192.168.1.1: icmp_seq=3 Destination Host Unreachable
 void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header, 
 		int bytes, t_ft_ping *app)
 {
-	int	hlen, datalen;
+	int	hlen, datalen, embedded_len;
 	
 	hlen = ip_header->ihl << 2;
 	datalen = bytes - hlen;
-	if (app->flags[VERBOSE])
-		packet_dump((uint8_t *)ip_header, bytes);
 	// Bytes are the ICMP packet size, not the full IP packet size
 	printf("%d bytes from %s: icmp_seq=%d ", datalen,
 			ip_get_source_addr(ip_header), icmp_get_sequence(icmp_header));
@@ -165,6 +174,12 @@ void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header,
 		default:
 			fprintf(stderr, "Unknown Code: %d\n", icmp_header->code);
 			break;
+	}
+	if (app->flags[VERBOSE])
+	{
+		embedded_len = bytes;
+		// Since it's an error, dump the embedded ip message
+		packet_dump(extract_embedded_packet((uint8_t *)ip_header, &embedded_len), embedded_len);
 	}
 }
 
