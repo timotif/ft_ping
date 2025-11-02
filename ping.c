@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 13:07:27 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 13:13:37 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,8 +92,8 @@ void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header,
 	hlen = ip_header->ihl << 2;
 	datalen = bytes - hlen;
 	// Bytes are the ICMP packet size, not the full IP packet size
-	printf("%d bytes from %s: icmp_seq=%d ", datalen,
-			ip_get_source_addr(ip_header), icmp_get_sequence(icmp_header));
+	printf("%d bytes from %s: ", datalen,
+			ip_get_source_addr(ip_header));
 	switch (icmp_header->type)
 	{
 		case ICMP_DEST_UNREACH:
