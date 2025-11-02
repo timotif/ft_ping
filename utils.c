@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 10:58:49 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 12:57:37 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 15:47:29 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -159,7 +159,22 @@ void	print_icmp(uint8_t *bytes, size_t len)
 
 void	print_usage(char *prog_name)
 {
-	fprintf(stderr, "Usage:\n\tsudo %s [-v] destination\n", prog_name);
+	fprintf(stderr, "Usage:\n\tsudo %s [-?vV] [-c NUMBER] HOST\n", prog_name);
+}
+
+void	print_credits()
+{
+	printf("FT_PING (42Berlin) v0.1\n");
+	printf("Copyright (C) 2025 - All rights reserved (but we're not that serious about it)\n");
+	printf("License: WTFPL - Do What The F*** You Want To Public License\n");
+	printf("This program is free software. You can redistribute it and/or modify it\n");
+	printf("under the terms of the WTFPL, Version 2, as published by Sam Hocevar.\n");
+	printf("See http://www.wtfpl.net/ for more details.\n\n");
+	printf("NO WARRANTY: This software is provided \"as is\", without warranty of any kind.\n");
+	printf("If it breaks, you get to keep both pieces. If it works, consider yourself lucky.\n");
+	printf("The author is not responsible for any packets lost in the void, angry network\n");
+	printf("administrators, or existential crises caused by pondering ICMP philosophy.\n\n");
+	printf("Written by Timoti Fregni.\n\n");
 }
 
 void	print_addr(struct sockaddr_in *addr)

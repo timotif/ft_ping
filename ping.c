@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 13:13:37 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 15:37:59 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -283,6 +283,8 @@ void	handle_packet_reception(t_ft_ping *app)
 		if (rcv_seq <= app->sequence && rcv_seq >= 0) // accept all packets
 			process_packet(bytes, app, rcv_seq);
 	}
+	if (app->flags[COUNT] && app->sent_packets >= app->flags[COUNT])
+		app->stop = 1;
 }
 
 void	handle_select_error(void)
@@ -293,6 +295,11 @@ void	handle_select_error(void)
 
 void	send_next_packet(t_ft_ping *app, struct timeval *last)
 {
+	if (app->flags[COUNT] && app->sent_packets >= app->flags[COUNT])
+	{
+		app->stop = 1;
+		return ;
+	}
 	app->sequence++;
 	send_echo(app);
 	gettimeofday(last, NULL);
@@ -315,7 +322,7 @@ int	ping_loop(t_ft_ping *app)
 		wait_result = select(app->socket + 1, &fdset, NULL, NULL, &resp_time);
 		if (wait_result == WAIT_ERROR)
 			handle_select_error();
-		else if (wait_result == WAIT_READY) 
+		else if (wait_result == WAIT_READY)
 			handle_packet_reception(app);
 		else // WAIT_TIMEOUT - time to send the next packet
 			send_next_packet(app, &last);

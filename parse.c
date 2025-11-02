@@ -6,61 +6,92 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 11:05:14 by tfregni           #+#    #+#             */
-/*   Updated: 2025/10/30 12:14:43 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 15:47:45 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ft_ping.h"
 
-void	parse_flag(char *flag, t_ft_ping *app, char *prog_name)
+/*
+Returns a pointer to the first non-digit char or NULL if it's number  
+ */
+static char	*isnumber(char *s)
 {
-	flag++; // consume '-'
-	if (!*flag)
+	if (!s || !*s)
+		return (s);
+	while (*s)
 	{
-		fprintf(stderr, "Bad flag: illegal space\n");
-		exit (1);
+		if (!isdigit(*s))
+			return (s);
+		s++;
 	}
-	switch (*flag)
-	{
-		case 'v':
-			app->flags[VERBOSE] = 1;
-			break;
-		case '?':
-			print_usage(prog_name);
-			exit (0);
-		default:
-			fprintf(stderr, "%s: -%c: Unrecognized option\n", prog_name, *flag);
-			print_usage(prog_name);
-			exit (1);
-	}
+	return (NULL);
 }
 
+/**
+Parse command line arguments using POSIX getopt()
+Option string "vc:h":
+  - 'v' = verbose flag (no argument)
+  - 'c:' = count option (requires argument)
+  - '?' = help flag (no argument)
+ */
 void	parse_args(int ac, char **av, t_ft_ping *app)
 {
-	int		i;
-
-	if (ac < 2)
+	int		opt;
+	
+	// getopt() processes options until it finds a non-option or reaches end
+	while ((opt = getopt(ac, av, "Vvc:?")) != -1)
 	{
-		print_usage(av[0]);
-		exit (1);
-	}
-	i = 0;
-	while (++i < ac)
-	{
-		if (av[i] && av[i][0])
+		switch (opt)
 		{
-			if (av[i][0] == '-')
-				parse_flag(av[i], app, av[0]);
-			else
+			case 'v':
+			// Simple flag - just set it
+			app->flags[VERBOSE] = 1;
+			break;
+			case 'c':
+			// Option with argument - optarg points to the value
+			if (isnumber(optarg))
 			{
-				if (!app->hostname)
-					app->hostname = av[i];
-			}
+				fprintf(stderr, "%s: invalid value: %s near %s\n", av[0], 
+					optarg, isnumber(optarg));
+					exit(1);
+				}
+				app->flags[COUNT] = (uint16_t)atoi(optarg);
+				break;
+				case 'h':
+				print_usage(av[0]);
+				exit(0);
+			case 'V':
+				print_credits();
+				exit(0);
+			case '?':
+				// getopt() automatically prints error for unknown options
+				// and sets opt to '?'
+				print_usage(av[0]);
+				exit(0);
+
+			default:
+				// Should never reach here with proper option string
+				fprintf(stderr, "%s: unexpected error in getopt\n", av[0]);
+				exit(1);
 		}
 	}
-	if (!app->hostname)
+
+	// After getopt(), optind points to first non-option argument
+	// This should be the hostname
+	if (optind < ac)
+		app->hostname = av[optind];
+	else
 	{
+		fprintf(stderr, "%s: missing hostname\n", av[0]);
 		print_usage(av[0]);
-		exit (1);
+		exit(1);
+	}
+
+	// Check if there are extra arguments after hostname
+	if (optind + 1 < ac)
+	{
+		fprintf(stderr, "%s: extra arguments after hostname\n", av[0]);
+		exit(1);
 	}
 }

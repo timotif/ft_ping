@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 12:32:50 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 15:46:43 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,7 @@
 # include <math.h>
 # include <error.h>
 # include <sys/select.h>
+# include <ctype.h>
 
 # define ICMP_HEADER_SIZE 8
 # define PAYLOAD_SIZE (PACKET_SIZE - ICMP_HEADER_SIZE)
@@ -59,6 +60,7 @@ typedef enum e_wait_result
 enum	e_flags
 {
 	VERBOSE,
+	COUNT,
 	FLAGS_COUNT
 };
 
@@ -66,7 +68,7 @@ enum	e_flags
 typedef struct s_ft_ping
 {
 	volatile sig_atomic_t	stop; /* Written atomically (an int can be compiled in more assembly instructions that might be interrupted in the middle)*/
-	uint8_t					flags[FLAGS_COUNT]; // allocates for the amount of flags I implemented
+	uint16_t				flags[FLAGS_COUNT]; // allocates for the amount of flags I implemented
 	const char				*hostname;
 	char					ip_str[INET_ADDRSTRLEN];
 	int						socket;
@@ -106,6 +108,7 @@ void		print_bytes(uint8_t *bytes, size_t len, char *header);
 void		print_icmp(uint8_t *bytes, size_t len);
 void		print_ip(uint8_t *byes, size_t len);
 void		print_usage(char *prog_name);
+void		print_credits();
 void		print_addr(struct sockaddr_in *addr);
 long long	elapsed_time(struct timeval start, struct timeval end);
 
