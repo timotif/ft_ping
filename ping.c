@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 15:37:59 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 16:20:05 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -311,7 +311,7 @@ int	ping_loop(t_ft_ping *app)
 	fd_set			fdset;
 	t_wait_result	wait_result;
 
-	initialize_timing(INTERVAL, &interval, &last, &resp_time);
+	initialize_timing(app->flags[INTERVAL], &interval, &last, &resp_time);
 	app->sequence = 0;
 	send_echo(app);
 	while (1 && !app->stop)

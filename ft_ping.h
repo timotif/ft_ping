@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 15:46:43 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 15:55:32 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@
 # define PACKET_SIZE 64
 # define MAX_IP_HEADER_SIZE 60
 # define RECV_BUFFER_SIZE (PACKET_SIZE + MAX_IP_HEADER_SIZE)
-# define INTERVAL 1000
+# define INTERVAL_MS 1000
 
 typedef struct icmphdr	t_icmp_header;
 typedef struct iphdr	t_ip_header;
@@ -61,6 +61,7 @@ enum	e_flags
 {
 	VERBOSE,
 	COUNT,
+	INTERVAL,
 	FLAGS_COUNT
 };
 

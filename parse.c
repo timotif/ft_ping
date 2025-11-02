@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 11:05:14 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 15:47:45 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 16:19:16 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,29 @@ static char	*isnumber(char *s)
 	return (NULL);
 }
 
+static char *isfloat(char *s)
+{
+	int	dot;
+	
+	if (!s || !*s)
+		return (s);
+	dot = 0;
+	while(*s)
+	{
+		if (*s == '.')
+		{
+			if (!dot)
+				dot++;
+			else
+				return (s);
+		}
+		else if (!isdigit(*s))
+			return (s);
+		s++;
+	}
+	return (NULL);
+}
+
 /**
 Parse command line arguments using POSIX getopt()
 Option string "vc:h":
@@ -40,7 +63,7 @@ void	parse_args(int ac, char **av, t_ft_ping *app)
 	int		opt;
 	
 	// getopt() processes options until it finds a non-option or reaches end
-	while ((opt = getopt(ac, av, "Vvc:?")) != -1)
+	while ((opt = getopt(ac, av, "Vvc:i:?")) != -1)
 	{
 		switch (opt)
 		{
@@ -50,17 +73,33 @@ void	parse_args(int ac, char **av, t_ft_ping *app)
 			break;
 			case 'c':
 			// Option with argument - optarg points to the value
-			if (isnumber(optarg))
-			{
-				fprintf(stderr, "%s: invalid value: %s near %s\n", av[0], 
-					optarg, isnumber(optarg));
+				if (isnumber(optarg))
+				{
+					fprintf(stderr, "%s: invalid value: %s near %s\n", av[0], 
+						optarg, isnumber(optarg));
 					exit(1);
 				}
 				app->flags[COUNT] = (uint16_t)atoi(optarg);
 				break;
-				case 'h':
+			case 'h':
 				print_usage(av[0]);
 				exit(0);
+			case 'i':
+				if (isfloat(optarg))
+				{
+					fprintf(stderr, "%s: invalid value: %s near %s\n", av[0],
+						optarg, isfloat(optarg));
+					exit (1);
+				}
+				float value = atof(optarg);
+				if (value < 0.2f)
+				{
+					fprintf(stderr, "%s: option value too small: %s\n", av[0], optarg);
+					exit (1);
+				}
+				app->flags[INTERVAL] = (uint16_t)round(value * 1000);
+				printf("app->flags[INTERVAL] = %u ms\n", app->flags[INTERVAL]); // DEBUG
+				break ;
 			case 'V':
 				print_credits();
 				exit(0);

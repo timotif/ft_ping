@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:54:32 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/01 20:59:37 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 16:20:13 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,6 +118,7 @@ int	resolv_hostname(const char *hostname, t_ft_ping *app)
 static void	init_app(t_ft_ping *app)
 {
 	memset(app, 0, sizeof(*app));
+	app->flags[INTERVAL] = INTERVAL_MS;
 }
 
 int	main(int ac, char **av)
