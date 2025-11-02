@@ -6,129 +6,109 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 11:05:14 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 16:59:24 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 17:00:08 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ft_ping.h"
 
 /*
-Returns a pointer to the first non-digit char or NULL if it's number  
+ * Parse integer with range validation for uint16_t storage
+ * Returns parsed value on success, exits on error
  */
-static char	*isnumber(char *s)
+static uint16_t	parse_uint16(char *optarg, char *prog_name, char *opt_name,
+				long min, long max)
 {
-	if (!s || !*s)
-		return (s);
-	while (*s)
+	char	*endptr;
+	long	value;
+
+	errno = 0;
+	value = strtol(optarg, &endptr, 10);
+	if (errno == ERANGE || *endptr != '\0' || endptr == optarg)
 	{
-		if (!isdigit(*s))
-			return (s);
-		s++;
+		fprintf(stderr, "%s: invalid %s value: %s\n", prog_name,
+			opt_name, optarg);
+		exit(1);
 	}
-	return (NULL);
+	if (value < min || value > max)
+	{
+		fprintf(stderr, "%s: %s must be between %ld and %ld\n",
+			prog_name, opt_name, min, max);
+		exit(1);
+	}
+	return ((uint16_t)value);
 }
 
-static char *isfloat(char *s)
+/*
+ * Parse floating point interval with range validation
+ * Converts to milliseconds for uint16_t storage
+ */
+static uint16_t	parse_interval(char *optarg, char *prog_name)
 {
-	int	dot;
-	
-	if (!s || !*s)
-		return (s);
-	dot = 0;
-	while(*s)
+	char	*endptr;
+	double	value;
+
+	errno = 0;
+	value = strtod(optarg, &endptr);
+	if (errno == ERANGE || *endptr != '\0' || endptr == optarg)
 	{
-		if (*s == '.')
-		{
-			if (!dot)
-				dot++;
-			else
-				return (s);
-		}
-		else if (!isdigit(*s))
-			return (s);
-		s++;
+		fprintf(stderr, "%s: invalid interval value: %s\n",
+			prog_name, optarg);
+		exit(1);
 	}
-	return (NULL);
+	if (value < 0.2 || value > 65.535)
+	{
+		fprintf(stderr, "%s: interval must be between 0.2 and 65.535 seconds\n",
+			prog_name);
+		exit(1);
+	}
+	return ((uint16_t)round(value * 1000.0));
 }
 
 /**
-Parse command line arguments using POSIX getopt()
-Option string "vc:h":
-  - 'v' = verbose flag (no argument)
-  - 'c:' = count option (requires argument)
-  - '?' = help flag (no argument)
+ * Parse command line arguments using POSIX getopt()
+ * Option string "Vvc:i:qw:?":
+ *   - 'V' = version (no argument)
+ *   - 'v' = verbose flag (no argument)
+ *   - 'c:' = count option (requires argument)
+ *   - 'i:' = interval option (requires argument)
+ *   - 'q' = quiet flag (no argument)
+ *   - 'w:' = timeout option (requires argument)
+ *   - '?' = help flag (no argument)
  */
 void	parse_args(int ac, char **av, t_ft_ping *app)
 {
-	int		opt;
-	
-	// getopt() processes options until it finds a non-option or reaches end
-	while ((opt = getopt(ac, av, "Vvc:i:?qw:")) != -1)
-	{
-		switch (opt)
-		{
-			case 'v':
-			// Simple flag - just set it
-			app->flags[VERBOSE] = 1;
-			break;
-			case 'c':
-			// Option with argument - optarg points to the value
-				if (isnumber(optarg))
-				{
-					fprintf(stderr, "%s: invalid value: %s near %s\n", av[0], 
-						optarg, isnumber(optarg));
-					exit(1);
-				}
-				app->flags[COUNT] = (uint16_t)atoi(optarg);
-				break;
-			case 'h':
-				print_usage(av[0]);
-				exit(0);
-			case 'i':
-				if (isfloat(optarg))
-				{
-					fprintf(stderr, "%s: invalid value: %s near %s\n", av[0],
-						optarg, isfloat(optarg));
-					exit (1);
-				}
-				float value = atof(optarg);
-				if (value < 0.2f)
-				{
-					fprintf(stderr, "%s: option value too small: %s\n", av[0], optarg);
-					exit (1);
-				}
-				app->flags[INTERVAL] = (uint16_t)round(value * 1000);
-				break ;
-			case 'q':
-				app->flags[QUIET] = 1;
-				break ;
-			case 'w':
-				if (isnumber(optarg))
-				{
-					fprintf(stderr, "%s: invalid value: %s near %s\n", av[0],
-						optarg, isnumber(optarg));
-					exit(1);
-				}
-				app->flags[TIMEOUT] = (uint16_t)atoi(optarg);
-				break ;	
-			case 'V':
-				print_credits();
-				exit(0);
-			case '?':
-				// getopt() automatically prints error for unknown options
-				// and sets opt to '?'
-				print_usage(av[0]);
-				exit(0);
+	int	opt;
 
-			default:
-				// Should never reach here with proper option string
-				fprintf(stderr, "%s: unexpected error in getopt\n", av[0]);
-				exit(1);
+	while ((opt = getopt(ac, av, "Vvc:i:qw:?")) != -1)
+	{
+		if (opt == 'v')
+			app->flags[VERBOSE] = 1;
+		else if (opt == 'V')
+		{
+			print_credits();
+			exit(0);
+		}
+		else if (opt == 'c')
+			app->flags[COUNT] = parse_uint16(optarg, av[0], "count", 1, 65535);
+		else if (opt == 'i')
+			app->flags[INTERVAL] = parse_interval(optarg, av[0]);
+		else if (opt == 'q')
+			app->flags[QUIET] = 1;
+		else if (opt == 'w')
+			app->flags[TIMEOUT] = parse_uint16(optarg, av[0], "timeout",
+				1, 65535);
+		else if (opt == '?')
+		{
+			print_usage(av[0]);
+			exit(0);
+		}
+		else
+		{
+			fprintf(stderr, "%s: unexpected error in getopt\n", av[0]);
+			exit(1);
 		}
 	}
-
-	// After getopt(), optind points to first non-option argument
-	// This should be the hostname
 	if (optind < ac)
 		app->hostname = av[optind];
 	else
@@ -137,8 +117,6 @@ void	parse_args(int ac, char **av, t_ft_ping *app)
 		print_usage(av[0]);
 		exit(1);
 	}
-
-	// Check if there are extra arguments after hostname
 	if (optind + 1 < ac)
 	{
 		fprintf(stderr, "%s: extra arguments after hostname\n", av[0]);

@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 16:47:43 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/02 18:39:56 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -100,7 +100,6 @@ void	clean_up();
 
 /***** PARSE *****/
 void	parse_args(int ac, char **av, t_ft_ping *app);
-void	parse_flag(char *flag, t_ft_ping *app, char *prog_name);
 
 /***** SOCKET *****/
 int		init_socket(void);
