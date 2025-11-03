@@ -19,7 +19,9 @@ void	clean_up()
 {
 	if (!g_ft_ping)
 		return ;
-	print_exit_message(g_ft_ping);
+	// Only print exit message if we actually started pinging (sent at least one packet)
+	if (g_ft_ping->sent_packets > 0)
+		print_exit_message(g_ft_ping);
 	if (g_ft_ping->socket > 0)
 		close(g_ft_ping->socket);
 	if (g_ft_ping->res)
