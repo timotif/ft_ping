@@ -6,11 +6,12 @@
 #    By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/10/29 21:18:20 by tfregni           #+#    #+#              #
-#    Updated: 2025/11/01 14:19:36 by tfregni          ###   ########.fr        #
+#    Updated: 2025/11/03 10:08:55 by tfregni          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
-SRC = ft_ping.c socket.c parse.c packet.c ping.c ip.c icmp.c utils.c bitmap.c
+SRC = ft_ping.c network.c parse.c ping.c ip_header.c icmp_packet.c \
+	time_utils.c bitmap.c output_format.c output_debug.c
 OBJ = $(SRC:.c=.o)
 CC = gcc
 CFLAGS = -Wall -Wextra -Werror

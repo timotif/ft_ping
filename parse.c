@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 11:05:14 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 21:41:13 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/03 08:07:34 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,23 +99,23 @@ void	parse_args(int ac, char **av, t_ft_ping *app)
 			s_long_options, &option_index)) != -1)
 	{
 		if (opt == 'v')
-			app->flags[VERBOSE] = 1;
+			app->options[VERBOSE] = 1;
 		else if (opt == 'V')
 		{
 			print_credits();
 			exit(0);
 		}
 		else if (opt == 'c')
-			app->flags[COUNT] = parse_uint16(optarg, av[0], "count", 1, 65535);
+			app->options[COUNT] = parse_uint16(optarg, av[0], "count", 1, 65535);
 		else if (opt == 'i')
-			app->flags[INTERVAL] = parse_interval(optarg, av[0]);
+			app->options[INTERVAL] = parse_interval(optarg, av[0]);
 		else if (opt == 'q')
-			app->flags[QUIET] = 1;
+			app->options[QUIET] = 1;
 		else if (opt == 'w')
-			app->flags[TIMEOUT] = parse_uint16(optarg, av[0], "timeout",
+			app->options[TIMEOUT] = parse_uint16(optarg, av[0], "timeout",
 				1, 65535);
 		else if (opt == TTL + ONLY_LONG)
-			app->flags[TTL] = parse_uint16(optarg, av[0], "ttl", 1, 255);
+			app->options[TTL] = parse_uint16(optarg, av[0], "ttl", 1, 255);
 		else if (opt == USAGE + ONLY_LONG)
 		{
 			print_usage(av[0]);

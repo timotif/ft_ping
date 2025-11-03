@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/02 22:18:16 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/03 10:21:27 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,21 +29,6 @@ void	update_stats(t_ft_ping *app, long long time)
 	app->variance_m2 += delta * delta2;
 	if (app->rcv_packets > 1)
 	app->stats[STDDEV] = (long long)sqrt(app->variance_m2 / app->rcv_packets);
-}
-
-void	print_echo(int psize, t_ip_header *ip_header, int rcv_seq,
-	long long time, int dup)
-{
-	if (g_ft_ping->flags[QUIET])
-		return ;
-	/* 64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.022 ms */
-	printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%lld.%03lld ms",
-		psize, ip_get_source_addr(ip_header),
-		rcv_seq,
-		ip_header->ttl, time / 1000, time % 1000);
-	if (dup)
-		printf(" (DUP!)");
-	printf("\n");
 }
 
 void	ping_success(t_ip_header *ip_header, t_ft_ping *app, int rcv_seq)
@@ -71,121 +56,6 @@ void	ping_success(t_ip_header *ip_header, t_ft_ping *app, int rcv_seq)
 	print_echo(app->packet_size, ip_header, rcv_seq, time, dup);
 }
 
-uint8_t	*extract_embedded_packet(uint8_t *error_packet, int *embedded_len)
-{
-	t_ip_header	*ip;
-	int			hlen;
-
-	ip = (t_ip_header *)error_packet;
-	hlen = ip->ihl << 2;
-	*embedded_len = *embedded_len - hlen - ICMP_HEADER_SIZE;
-	return (error_packet + hlen + ICMP_HEADER_SIZE);
-}
-
-/* 
-Handle ICMP error messages
-Example: 56 bytes from 192.168.1.1: icmp_seq=3 Destination Host Unreachable
-*/
-void	ping_fail(t_ip_header *ip_header, t_icmp_header *icmp_header, 
-		int bytes, t_ft_ping *app)
-{
-	int	hlen, datalen, embedded_len;
-
-	if (app->flags[QUIET])
-		return ;
-	hlen = ip_header->ihl << 2;
-	datalen = bytes - hlen;
-	// Bytes are the ICMP packet size, not the full IP packet size
-	printf("%d bytes from %s: ", datalen,
-			ip_get_source_addr(ip_header));
-	switch (icmp_header->type)
-	{
-		case ICMP_DEST_UNREACH:
-			switch (icmp_header->code)
-			{
-				case (ICMP_HOST_UNREACH):
-					printf("Destination Host Unreachable\n");
-					break;
-				case (ICMP_NET_UNREACH):
-					printf("Destination Net Unreachable\n");
-					break;
-				case (ICMP_PROT_UNREACH):
-					printf("Destination Protocol Unreachable\n");
-					break;
-				case (ICMP_PORT_UNREACH):
-					printf("Destination Port Unreachable\n");
-					break;
-				case (ICMP_FRAG_NEEDED):
-					printf("Fragmentation needed and DF set\n");
-					break;
-				case (ICMP_SR_FAILED):
-					printf("Source Route Failed\n");
-					break;
-				case (ICMP_NET_UNKNOWN):
-					printf("Network Unknown\n");
-					break;
-				case (ICMP_HOST_UNKNOWN):
-					printf("Host Unknown\n");
-					break;
-				case (ICMP_HOST_ISOLATED):
-					printf("Host Isolated\n");
-					break;
-				case (ICMP_NET_UNR_TOS):
-					printf("Destination Network Unreachable At This TOS\n");
-					break;
-				case (ICMP_HOST_UNR_TOS):
-					printf("Destination Host Unreachable At This TOS\n");
-					break;
-				default:
-					printf("Destination Unreachable\n");
-					break;
-			}
-			break;
-		case (ICMP_REDIRECT):
-			switch (icmp_header->code)
-			{
-				case (ICMP_REDIR_NET):
-					printf("Redirect Network\n");
-					break;
-				case (ICMP_REDIR_HOST):
-					printf("Redirect Host\n");
-					break;
-				case (ICMP_REDIR_NETTOS):
-					printf("Redirect Type of Service and Network\n");
-					break;
-				case (ICMP_REDIR_HOSTTOS):
-					printf("Redirect Type of Service and Host\n");
-					break;
-				default:
-					printf("Redirect Message\n");
-					break;
-			}
-			break;
-		case (ICMP_TIME_EXCEEDED):
-			switch (icmp_header->code)
-			{
-				case (ICMP_EXC_TTL):
-					printf("Time to live exceeded\n");
-					break;
-				case (ICMP_EXC_FRAGTIME):
-					printf("Frag reassembly time exceeded\n");
-					break;
-				default:
-					printf("Time Exceeded\n");
-					break;
-			}
-			break;
-		default:
-			fprintf(stderr, "Unknown Code: %d\n", icmp_header->code);
-			break;
-	}
-	if (app->flags[VERBOSE])
-	{
-		embedded_len = bytes;
-		// Since it's an error, dump the embedded ip message
-		packet_dump(extract_embedded_packet((uint8_t *)ip_header, &embedded_len), embedded_len);
-	}
-}
 
 /* Payload: timestamp in host order + filler */
 void	prepare_payload(void *payload, int size)
@@ -214,58 +84,6 @@ int	send_echo(t_ft_ping *app)
 	return (0);
 }
 
-/* Normalizes a timeval-like structure's microseconds field so the pair 
-(tv_sec, tv_usec) represents the same total time but with tv_usec in the 
-canonical range [0, 10^6)*/
-static void normalize_timeval(struct timeval *t)
-{
-	long long	sec, usec, carry;
-
-	sec = (long long)t->tv_sec;
-	usec = (long long)t->tv_usec;
-	carry = usec / 1000000LL;
-	usec -= carry * 1000000LL;
-	sec += carry;
-
-	/* if usec negative after division adjust one more second */
-	if (usec < 0)
-	{
-		usec += 1000000LL;
-		sec -= 1;
-	}
-
-	t->tv_sec = (time_t)sec;
-	t->tv_usec = (suseconds_t)usec;
-}
-
-/* Initalize timing structures for custom interval in ms */
-void	initialize_timing(uint32_t interval_ms, struct timeval *interval,
-		struct timeval *last, struct timeval *resp_time)
-{
-	memset(interval, 0, sizeof(*interval));
-	memset(last, 0, sizeof(*last));
-	memset(resp_time, 0, sizeof(*resp_time));
-	interval->tv_sec = interval_ms / 1000;
-	interval->tv_usec = (interval_ms % 1000) * 1000;
-	gettimeofday(last, NULL);	
-}
-
-/* Calculate time remaining until next packet should be sent.
-Returns time from now until (last + interval). */
-void	calculate_timeout_remaining(struct timeval *timeout,
-		const struct timeval *last, const struct timeval *interval)
-{	
-	struct timeval	now;
-
-	gettimeofday(&now, NULL);
-	timeout->tv_sec = last->tv_sec + interval->tv_sec - now.tv_sec;
-	timeout->tv_usec = last->tv_usec + interval->tv_usec - now.tv_usec;
-	normalize_timeval(timeout);
-	// Clamp negative values to 0
-	if (timeout->tv_sec < 0)
-		timeout->tv_sec = timeout->tv_usec = 0;
-}	
-
 /* Receive packet, validate sequence number and process */
 void	handle_packet_reception(t_ft_ping *app)
 {
@@ -287,7 +105,7 @@ void	handle_packet_reception(t_ft_ping *app)
 		if (rcv_seq <= app->sequence && rcv_seq >= 0)
 			process_packet(bytes, app, rcv_seq);
 	}
-	if (app->flags[TIMEOUT] && ping_timeout(&app->start, app->flags[TIMEOUT]))
+	if (app->options[TIMEOUT] && ping_timeout(&app->start, app->options[TIMEOUT]))
 		app->stop = 1;
 }
 
@@ -302,12 +120,12 @@ void	handle_select_error(void)
 
 void	send_next_packet(t_ft_ping *app, struct timeval *last)
 {
-	if (app->flags[COUNT] && app->sent_packets >= app->flags[COUNT])
+	if (app->options[COUNT] && app->sent_packets >= app->options[COUNT])
 	{
 		app->stop = 1;
 		return ;
 	}
-	if (app->flags[TIMEOUT] && ping_timeout(&app->start, app->flags[TIMEOUT]))
+	if (app->options[TIMEOUT] && ping_timeout(&app->start, app->options[TIMEOUT]))
 	{
 		app->stop = 1;
 		return ;
@@ -338,7 +156,8 @@ int	ping_loop(t_ft_ping *app)
 	fd_set			fdset;
 	t_wait_result	wait_result;
 
-	initialize_timing(app->flags[INTERVAL], &interval, &last, &resp_time);
+	signal(SIGINT, interrupt);
+	initialize_timing(app->options[INTERVAL], &interval, &last, &resp_time);
 	gettimeofday(&app->start, NULL);
 	app->sequence = 0;
 	send_echo(app);
