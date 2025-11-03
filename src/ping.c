@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 10:21:27 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/03 10:32:45 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,7 +77,6 @@ int	send_echo(t_ft_ping *app)
 	prepare_payload(payload, app->packet_size - ICMP_HEADER_SIZE);
 	prepare_echo_request_packet(payload, app->sendbuffer, app->sequence,
 		app->pid);
-	// print_icmp(app->sendbuffer, app->packet_size); // DEBUG
 	if (send_packet(app->socket, app->sendbuffer, &app->dest_addr) < 0)
 		return (-1);
 	app->sent_packets++;

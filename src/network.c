@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/03 09:41:33 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 10:21:14 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/03 10:32:54 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -149,7 +149,6 @@ void	process_packet(int bytes, t_ft_ping *app, int rcv_seq)
 	{
 		case ICMP_ECHOREPLY:
 			if (ntohs(icmp_header->un.echo.id) == app->pid)
-				// packet_dump(app->recvbuffer, bytes); // DEBUG
 				ping_success(ip_header, app, rcv_seq);
 			break ;
 		case ICMP_ECHO:
