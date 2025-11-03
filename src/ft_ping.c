@@ -6,14 +6,13 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:54:32 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 09:56:42 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/03 12:21:52 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ft_ping.h"
 
 t_ft_ping	*g_ft_ping = NULL;
-
 
 void	clean_up()
 {

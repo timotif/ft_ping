@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 10:32:45 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/03 13:30:38 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,6 +104,8 @@ void	handle_packet_reception(t_ft_ping *app)
 		if (rcv_seq <= app->sequence && rcv_seq >= 0)
 			process_packet(bytes, app, rcv_seq);
 	}
+	if (app->options[COUNT] && app->rcv_packets >= app->options[COUNT])
+		app->stop = 1;
 	if (app->options[TIMEOUT] && ping_timeout(&app->start, app->options[TIMEOUT]))
 		app->stop = 1;
 }
@@ -120,10 +122,7 @@ void	handle_select_error(void)
 void	send_next_packet(t_ft_ping *app, struct timeval *last)
 {
 	if (app->options[COUNT] && app->sent_packets >= app->options[COUNT])
-	{
-		app->stop = 1;
 		return ;
-	}
 	if (app->options[TIMEOUT] && ping_timeout(&app->start, app->options[TIMEOUT]))
 	{
 		app->stop = 1;
@@ -134,19 +133,14 @@ void	send_next_packet(t_ft_ping *app, struct timeval *last)
 	gettimeofday(last, NULL);
 }
 
-int	ping_timeout(struct timeval *start_time, int timeout)
+void	ping_preload(t_ft_ping *app, struct timeval *last)
 {
-	struct timeval	now;
-	long long		elapsed;
-
-	gettimeofday(&now, NULL);
-	if (timeout)
+	while (app->sent_packets < app->options[PRELOAD])
 	{
-		elapsed = elapsed_time(*start_time, now) / 1000000; // in seconds
-		if (elapsed >= timeout)
-			return (1);
+		app->sequence++;
+		send_echo(app);
 	}
-	return (0);
+	gettimeofday(last, NULL);
 }
 
 int	ping_loop(t_ft_ping *app)
@@ -160,6 +154,8 @@ int	ping_loop(t_ft_ping *app)
 	gettimeofday(&app->start, NULL);
 	app->sequence = 0;
 	send_echo(app);
+	if (app->options[PRELOAD])
+		ping_preload(app, &last);
 	while (1 && !app->stop)
 	{
 		FD_ZERO(&fdset);

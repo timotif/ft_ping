@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 11:05:14 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 08:07:34 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/03 12:44:24 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,6 +69,7 @@ static struct option s_long_options[] =
 {
 	{"count", 		required_argument,	0, 'c'},
 	{"interval",	required_argument, 	0, 'i'},
+	{"preload",		required_argument,	0, 'l'},
 	{"ttl",			required_argument,	0, TTL + ONLY_LONG}, // Options with only long value start from 256
 	{"verbose",		no_argument,		0, 'v'},
 	{"timeout", 	required_argument,	0, 'w'},
@@ -95,7 +96,7 @@ void	parse_args(int ac, char **av, t_ft_ping *app)
 	int	opt;
 	int	option_index;
 
-	while ((opt = getopt_long(ac, av, "Vvc:i:qw:?",
+	while ((opt = getopt_long(ac, av, "Vvc:i:l:qw:?",
 			s_long_options, &option_index)) != -1)
 	{
 		if (opt == 'v')
@@ -109,6 +110,15 @@ void	parse_args(int ac, char **av, t_ft_ping *app)
 			app->options[COUNT] = parse_uint16(optarg, av[0], "count", 1, 65535);
 		else if (opt == 'i')
 			app->options[INTERVAL] = parse_interval(optarg, av[0]);
+		else if (opt == 'l')
+		{
+			if (getuid() != 0)
+			{
+				fprintf(stderr, "%s: preload option requires root privileges\n", av[0]);
+				exit(1);
+			}
+			app->options[PRELOAD] = parse_uint16(optarg, av[0], "preload", 1, 65535);
+		}
 		else if (opt == 'q')
 			app->options[QUIET] = 1;
 		else if (opt == 'w')

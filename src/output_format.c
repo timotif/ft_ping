@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/03 09:44:16 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 10:21:45 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/03 13:38:18 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -234,6 +234,7 @@ void	print_help(char *prog_name)
 	printf(" Options valid for all request types:\n\n");
 	printf("  -c,	--count=NUMBER		after sending NUMBER packets\n");
 	printf("  -i,	--interval=NUMBER	wait NUMBER seconds between sending each packet\n");
+	printf("  -l,	--preload=NUMBER		send NUMBER packets as fast as possible before\nfalling into normal mode of behavior (root only)\n");
 	printf("     	--ttl=N				specify N as time-to-live\n");
 	printf("  -v,	--verbose			verbose output\n");
 	printf("  -w,	--timeout=N			stop after N seconds\n");
@@ -248,7 +249,7 @@ void	print_help(char *prog_name)
 
 void	print_usage(char *prog_name)
 {
-	printf("Usage: sudo %s [-vq?V] [-c NUMBER] [-i NUMBER] [-w N] [--ttl=N] ", prog_name);
+	printf("Usage: sudo %s [-vq?V] [-c NUMBER] [-i NUMBER] [-w N] [--ttl=N] [-l NUMBER] ", prog_name);
 	printf("HOST ...\n");
 }
 

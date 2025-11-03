@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/03 09:50:47 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 09:53:30 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/03 12:30:39 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,4 +73,19 @@ long long	elapsed_time(struct timeval start, struct timeval end)
 	start_usec = (long long)start.tv_sec * 1000000 + (long long)start.tv_usec;
 	end_usec = (long long)end.tv_sec * 1000000 + (long long)end.tv_usec;
 	return (end_usec - start_usec);
+}
+
+int	ping_timeout(struct timeval *start_time, int timeout)
+{
+	struct timeval	now;
+	long long		elapsed;
+
+	gettimeofday(&now, NULL);
+	if (timeout)
+	{
+		elapsed = elapsed_time(*start_time, now) / 1000000; // in seconds
+		if (elapsed >= timeout)
+			return (1);
+	}
+	return (0);
 }

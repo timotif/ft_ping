@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 10:21:14 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/03 12:23:07 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,6 +63,7 @@ enum	e_options
 	VERBOSE,
 	COUNT,
 	INTERVAL,
+	PRELOAD,
 	QUIET,
 	TIMEOUT,
 	TTL,
