@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:54:32 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 12:21:52 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/03 14:49:02 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,6 @@ static void	init_app(t_ft_ping *app)
 	app->pid = getpid();
 	app->socket = -1; // at 0 the cleanup might close stdin
 	app->packet_size = PACKET_SIZE;
-	app->options[INTERVAL] = INTERVAL_MS;
 }
 
 int	main(int ac, char **av)

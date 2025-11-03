@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 11:05:14 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 12:44:24 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/03 14:50:19 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,10 +69,11 @@ static struct option s_long_options[] =
 {
 	{"count", 		required_argument,	0, 'c'},
 	{"interval",	required_argument, 	0, 'i'},
-	{"preload",		required_argument,	0, 'l'},
 	{"ttl",			required_argument,	0, TTL + ONLY_LONG}, // Options with only long value start from 256
 	{"verbose",		no_argument,		0, 'v'},
 	{"timeout", 	required_argument,	0, 'w'},
+	{"flood",		no_argument,		0, 'f'},
+	{"preload",		required_argument,	0, 'l'},
 	{"quiet", 		no_argument,		0, 'q'},
 	{"help", 		no_argument,		0, '?'},
 	{"usage",		no_argument,		0, USAGE + ONLY_LONG},
@@ -86,6 +87,7 @@ static struct option s_long_options[] =
  *   - 'v' = verbose flag (no argument)
  *   - 'c:' = count option (requires argument)
  *   - 'i:' = interval option (requires argument)
+ *   - 'l:' = preload option (requires argument)
  *   - 'q' = quiet flag (no argument)
  *   - 'w:' = timeout option (requires argument)
  *   - 'ttl:' = ttl option (requires argument, long-only)
@@ -96,7 +98,7 @@ void	parse_args(int ac, char **av, t_ft_ping *app)
 	int	opt;
 	int	option_index;
 
-	while ((opt = getopt_long(ac, av, "Vvc:i:l:qw:?",
+	while ((opt = getopt_long(ac, av, "Vvc:i:l:qw:f?",
 			s_long_options, &option_index)) != -1)
 	{
 		if (opt == 'v')
@@ -118,6 +120,15 @@ void	parse_args(int ac, char **av, t_ft_ping *app)
 				exit(1);
 			}
 			app->options[PRELOAD] = parse_uint16(optarg, av[0], "preload", 1, 65535);
+		}
+		else if (opt == 'f')
+		{
+			if (getuid() != 0)
+			{
+				fprintf(stderr, "%s: flood option requires root privileges\n", av[0]);
+				exit(1);
+			}
+			app->options[FLOOD] = 1;
 		}
 		else if (opt == 'q')
 			app->options[QUIET] = 1;
@@ -142,6 +153,11 @@ void	parse_args(int ac, char **av, t_ft_ping *app)
 			exit(1);
 		}
 	}
+	if (app->options[FLOOD] && app->options[INTERVAL])
+	{
+		fprintf(stderr, "%s: -f and -i incompatible options\n", av[0]);
+		exit(1);
+	}
 	if (optind < ac)
 		app->hostname = av[optind];
 	else
@@ -155,4 +171,6 @@ void	parse_args(int ac, char **av, t_ft_ping *app)
 		fprintf(stderr, "%s: extra arguments after hostname\n", av[0]);
 		exit(1);
 	}
+	if (!app->options[INTERVAL])
+		app->options[INTERVAL] = INTERVAL_MS;
 }

@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 12:23:07 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/03 14:09:20 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,13 +60,14 @@ typedef enum e_wait_result
 
 enum	e_options
 {
-	VERBOSE,
 	COUNT,
 	INTERVAL,
+	TTL,
+	VERBOSE,
+	TIMEOUT,
+	FLOOD,
 	PRELOAD,
 	QUIET,
-	TIMEOUT,
-	TTL,
 	USAGE,
 	FLAGS_COUNT,
 	ONLY_LONG = 255

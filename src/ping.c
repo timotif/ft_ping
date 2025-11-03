@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 13:30:38 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/03 14:57:33 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,10 @@ void	ping_success(t_ip_header *ip_header, t_ft_ping *app, int rcv_seq)
 		+ sizeof(t_icmp_header), sizeof(send_time));
 	time = elapsed_time(send_time, app->end);
 	update_stats(app, time);
-	print_echo(app->packet_size, ip_header, rcv_seq, time, dup);
+	if (app->options[FLOOD] && !app->options[QUIET])
+		putchar('\b');
+	else
+		print_echo(app->packet_size, ip_header, rcv_seq, time, dup);
 }
 
 
@@ -79,6 +82,8 @@ int	send_echo(t_ft_ping *app)
 		app->pid);
 	if (send_packet(app->socket, app->sendbuffer, &app->dest_addr) < 0)
 		return (-1);
+	if (app->options[FLOOD] && !app->options[QUIET])
+		putchar('.');
 	app->sent_packets++;
 	return (0);
 }

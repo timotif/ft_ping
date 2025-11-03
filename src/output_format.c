@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/03 09:44:16 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 13:38:18 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/03 15:00:36 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -241,6 +241,7 @@ void	print_help(char *prog_name)
 	printf("  %-4s %-20s %s\n", "-w,", "--timeout=N", "stop after N seconds");
 	printf("\n");
 	printf(" Options valid for --echo requests:\n\n");
+	printf("  %-4s %-20s %s\n", "-f,", "--flood", "flood ping (root only)");
 	printf("  %-4s %-20s %s\n", "-q,", "--quiet", "quiet output");
 	printf("\n");
 	printf("  %-4s %-20s %s\n", "-?,", "--help", "give this help list");
@@ -250,7 +251,7 @@ void	print_help(char *prog_name)
 
 void	print_usage(char *prog_name)
 {
-	printf("Usage: sudo %s [-vq?V] [-c NUMBER] [-i NUMBER] [-w N] [--ttl=N] [-l NUMBER] ", prog_name);
+	printf("Usage: sudo %s [-vfq?V] [-c NUMBER] [-i NUMBER] [-w N] [--ttl=N] [-l NUMBER] ", prog_name);
 	printf("HOST ...\n");
 }
 

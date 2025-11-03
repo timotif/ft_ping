@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/03 09:50:47 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 12:30:39 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/03 14:46:30 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,8 +43,13 @@ void	initialize_timing(uint32_t interval_ms, struct timeval *interval,
 	memset(interval, 0, sizeof(*interval));
 	memset(last, 0, sizeof(*last));
 	memset(resp_time, 0, sizeof(*resp_time));
-	interval->tv_sec = interval_ms / 1000;
-	interval->tv_usec = (interval_ms % 1000) * 1000;
+	if (g_ft_ping->options[FLOOD])
+		interval->tv_usec = 10000; // 10 ms
+	else
+	{
+		interval->tv_sec = interval_ms / 1000;
+		interval->tv_usec = (interval_ms % 1000) * 1000;
+	}
 	gettimeofday(last, NULL);	
 }
 
