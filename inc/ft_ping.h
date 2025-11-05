@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/26 16:56:46 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 10:21:14 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/04 11:53:17 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,21 @@
 # define PAYLOAD_SIZE (PACKET_SIZE - ICMP_HEADER_SIZE)
 # define PACKET_SIZE 64
 # define MAX_IP_HEADER_SIZE 60
-# define RECV_BUFFER_SIZE (PACKET_SIZE + MAX_IP_HEADER_SIZE)
+# define RECV_BUFFER_SIZE (2 * MAX_IP_HEADER_SIZE + ICMP_HEADER_SIZE + PACKET_SIZE)
+/**
+ * RFC 792: ICMP error structure
+ * ┌───────────────────────────────┐
+ * │   Outer IP Header (20-60)     │  ← Router's IP header
+ * ├───────────────────────────────┤
+ * │   ICMP Error Header (8)       │  ← Type, Code, Checksum, Unused
+ * ├───────────────────────────────┤
+ * │   Embedded IP Header (20 -60) │  ← Your original IP header
+ * ├───────────────────────────────┤
+ * │   Embedded ICMP Header (8)    │  ← Your original ICMP echo
+ * ├───────────────────────────────┤
+ * │   Embedded Payload (56)       │  ← First part of payload (Linux sends more)
+ * └───────────────────────────────┘
+ */
 # define INTERVAL_MS 1000
 # define DUP_TABLE_SIZE 8192
 
@@ -60,12 +74,14 @@ typedef enum e_wait_result
 
 enum	e_options
 {
-	VERBOSE,
 	COUNT,
 	INTERVAL,
-	QUIET,
-	TIMEOUT,
 	TTL,
+	VERBOSE,
+	TIMEOUT,
+	FLOOD,
+	PRELOAD,
+	QUIET,
 	USAGE,
 	FLAGS_COUNT,
 	ONLY_LONG = 255

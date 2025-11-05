@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/03 09:44:16 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 10:21:45 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/05 08:11:01 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -148,7 +148,7 @@ void	print_exit_message(t_ft_ping *app)
 {
 	float		loss;
 	
-	if (!app)
+	if (!app || app->rcv_packets < 1)
 		return ;
 	loss = 0.0;
 	if (g_ft_ping->sent_packets > 0)
@@ -232,23 +232,26 @@ void	print_help(char *prog_name)
 	printf("Usage: sudo %s [OPTION...] [HOST...]\n", prog_name);
 	printf("Send ICMP ECHO_REQUEST packets to network hosts.\n\n");
 	printf(" Options valid for all request types:\n\n");
-	printf("  -c,	--count=NUMBER		after sending NUMBER packets\n");
-	printf("  -i,	--interval=NUMBER	wait NUMBER seconds between sending each packet\n");
-	printf("     	--ttl=N				specify N as time-to-live\n");
-	printf("  -v,	--verbose			verbose output\n");
-	printf("  -w,	--timeout=N			stop after N seconds\n");
+	printf("  %-4s %-20s %s\n", "-c,", "--count=NUMBER", "stop after sending NUMBER packets");
+	printf("  %-4s %-20s %s\n", "-i,", "--interval=NUMBER", "wait NUMBER seconds between sending each packet");
+	printf("  %-4s %-20s %s\n", "-l,", "--preload=NUMBER", "send NUMBER packets as fast as possible before");
+	printf("  %-4s %-20s %s\n", "", "", "falling into normal mode (root only)");
+	printf("  %-4s %-20s %s\n", "", "--ttl=N", "specify N as time-to-live");
+	printf("  %-4s %-20s %s\n", "-v,", "--verbose", "verbose output");
+	printf("  %-4s %-20s %s\n", "-w,", "--timeout=N", "stop after N seconds");
 	printf("\n");
 	printf(" Options valid for --echo requests:\n\n");
-	printf("  -q,	--quiet				quiet output\n");
+	printf("  %-4s %-20s %s\n", "-f,", "--flood", "flood ping (root only)");
+	printf("  %-4s %-20s %s\n", "-q,", "--quiet", "quiet output");
 	printf("\n");
-	printf("  -?,	--help				give this help list\n");
-	printf("     	--usage				give a short usage message\n");
-	printf("  -V						print program version\n");
-} // TODO: fix alignment
+	printf("  %-4s %-20s %s\n", "-?,", "--help", "give this help list");
+	printf("  %-4s %-20s %s\n", "", "--usage", "give a short usage message");
+	printf("  %-4s %-20s %s\n", "-V", "", "print program version");
+}
 
 void	print_usage(char *prog_name)
 {
-	printf("Usage: sudo %s [-vq?V] [-c NUMBER] [-i NUMBER] [-w N] [--ttl=N] ", prog_name);
+	printf("Usage: sudo %s [-vfq?V] [-c NUMBER] [-i NUMBER] [-w N] [--ttl=N] [-l NUMBER] ", prog_name);
 	printf("HOST ...\n");
 }
 

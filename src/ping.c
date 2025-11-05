@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 10:32:45 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/05 14:15:48 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,10 @@ void	ping_success(t_ip_header *ip_header, t_ft_ping *app, int rcv_seq)
 		+ sizeof(t_icmp_header), sizeof(send_time));
 	time = elapsed_time(send_time, app->end);
 	update_stats(app, time);
-	print_echo(app->packet_size, ip_header, rcv_seq, time, dup);
+	if (app->options[FLOOD] && !app->options[QUIET])
+		putchar('\b');
+	else
+		print_echo(app->packet_size, ip_header, rcv_seq, time, dup);
 }
 
 
@@ -68,7 +71,11 @@ void	prepare_payload(void *payload, int size)
 	memset(payload + sizeof(timestamp), 0x42, size - sizeof(timestamp));
 }
 
-int	send_echo(t_ft_ping *app)
+/**
+ * Send ICMP Echo Request packet
+ * Exits on send failure
+ */
+static void	send_echo(t_ft_ping *app)
 {
 	char			payload[app->packet_size - ICMP_HEADER_SIZE];
 
@@ -78,9 +85,10 @@ int	send_echo(t_ft_ping *app)
 	prepare_echo_request_packet(payload, app->sendbuffer, app->sequence,
 		app->pid);
 	if (send_packet(app->socket, app->sendbuffer, &app->dest_addr) < 0)
-		return (-1);
+		exit (1);
+	if (app->options[FLOOD] && !app->options[QUIET])
+		putchar('.');
 	app->sent_packets++;
-	return (0);
 }
 
 /* Receive packet, validate sequence number and process */
@@ -104,6 +112,8 @@ void	handle_packet_reception(t_ft_ping *app)
 		if (rcv_seq <= app->sequence && rcv_seq >= 0)
 			process_packet(bytes, app, rcv_seq);
 	}
+	if (app->options[COUNT] && app->rcv_packets >= app->options[COUNT])
+		app->stop = 1;
 	if (app->options[TIMEOUT] && ping_timeout(&app->start, app->options[TIMEOUT]))
 		app->stop = 1;
 }
@@ -120,10 +130,7 @@ void	handle_select_error(void)
 void	send_next_packet(t_ft_ping *app, struct timeval *last)
 {
 	if (app->options[COUNT] && app->sent_packets >= app->options[COUNT])
-	{
-		app->stop = 1;
 		return ;
-	}
 	if (app->options[TIMEOUT] && ping_timeout(&app->start, app->options[TIMEOUT]))
 	{
 		app->stop = 1;
@@ -134,19 +141,14 @@ void	send_next_packet(t_ft_ping *app, struct timeval *last)
 	gettimeofday(last, NULL);
 }
 
-int	ping_timeout(struct timeval *start_time, int timeout)
+void	ping_preload(t_ft_ping *app, struct timeval *last)
 {
-	struct timeval	now;
-	long long		elapsed;
-
-	gettimeofday(&now, NULL);
-	if (timeout)
+	while (app->sent_packets < app->options[PRELOAD])
 	{
-		elapsed = elapsed_time(*start_time, now) / 1000000; // in seconds
-		if (elapsed >= timeout)
-			return (1);
+		app->sequence++;
+		send_echo(app);
 	}
-	return (0);
+	gettimeofday(last, NULL);
 }
 
 int	ping_loop(t_ft_ping *app)
@@ -160,6 +162,8 @@ int	ping_loop(t_ft_ping *app)
 	gettimeofday(&app->start, NULL);
 	app->sequence = 0;
 	send_echo(app);
+	if (app->options[PRELOAD])
+		ping_preload(app, &last);
 	while (1 && !app->stop)
 	{
 		FD_ZERO(&fdset);
