@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/03 09:41:33 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 14:45:13 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/05 14:19:54 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,8 +83,10 @@ void	setup_destination(t_ft_ping *app)
 	{
 		if (status == EAI_SYSTEM)
 			perror("ft_ping: getaddrinfo");
+		else if (status == EAI_NONAME)
+			fprintf(stderr, "ft_ping: unknown host\n");
 		else
-			fprintf(stderr, "ft_ping: getaddrinfo: %s\n", gai_strerror(status));
+			fprintf(stderr, "ft_ping: %s\n", gai_strerror(status));
 		exit (1);
 	}
 }
@@ -96,7 +98,7 @@ int	send_packet(int sock, uint8_t *sendbuffer, struct sockaddr_in *addr)
 	bytes = sendto(sock, sendbuffer, g_ft_ping->packet_size, 
 			0, (struct sockaddr *)addr, sizeof(*addr));
 	if (bytes < 0)
-		perror("send packet");
+		perror("ft_ping: sending packet");
 	return (bytes);
 }
 

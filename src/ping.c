@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/28 17:55:07 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 14:57:33 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/05 14:15:48 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,7 +71,11 @@ void	prepare_payload(void *payload, int size)
 	memset(payload + sizeof(timestamp), 0x42, size - sizeof(timestamp));
 }
 
-int	send_echo(t_ft_ping *app)
+/**
+ * Send ICMP Echo Request packet
+ * Exits on send failure
+ */
+static void	send_echo(t_ft_ping *app)
 {
 	char			payload[app->packet_size - ICMP_HEADER_SIZE];
 
@@ -81,11 +85,10 @@ int	send_echo(t_ft_ping *app)
 	prepare_echo_request_packet(payload, app->sendbuffer, app->sequence,
 		app->pid);
 	if (send_packet(app->socket, app->sendbuffer, &app->dest_addr) < 0)
-		return (-1);
+		exit (1);
 	if (app->options[FLOOD] && !app->options[QUIET])
 		putchar('.');
 	app->sent_packets++;
-	return (0);
 }
 
 /* Receive packet, validate sequence number and process */
