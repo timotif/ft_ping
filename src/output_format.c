@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/03 09:44:16 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/03 15:00:36 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/05 08:11:01 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -148,7 +148,7 @@ void	print_exit_message(t_ft_ping *app)
 {
 	float		loss;
 	
-	if (!app)
+	if (!app || app->rcv_packets < 1)
 		return ;
 	loss = 0.0;
 	if (g_ft_ping->sent_packets > 0)
