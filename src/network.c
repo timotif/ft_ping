@@ -6,7 +6,7 @@
 /*   By: tfregni <tfregni@student.42berlin.de>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/03 09:41:33 by tfregni           #+#    #+#             */
-/*   Updated: 2025/11/05 14:19:54 by tfregni          ###   ########.fr       */
+/*   Updated: 2025/11/05 15:06:47 by tfregni          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,6 +81,7 @@ void	setup_destination(t_ft_ping *app)
 	status = resolv_hostname(app);
 	if (status != 0)
 	{
+		// inetutils prints "ping: unknown host" in every case
 		if (status == EAI_SYSTEM)
 			perror("ft_ping: getaddrinfo");
 		else if (status == EAI_NONAME)
