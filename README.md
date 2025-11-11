@@ -1,17 +1,6 @@
 # ft_ping
 
-A custom implementation of the ICMP ping utility, written in C as part of the 42 Berlin curriculum.
-
-## About 42 School
-
-[42](https://www.42.fr/) is a global network of tuition-free, peer-to-peer coding schools with a unique pedagogy that emphasizes project-based learning without teachers or traditional lectures. Students (called "cadets") progress through increasingly complex projects at their own pace, learning through hands-on practice and collaboration with peers.
-
-Key characteristics of 42:
-- **Project-based learning**: All learning happens through practical coding projects
-- **Peer evaluation**: Students review and grade each other's work
-- **No teachers**: Learning is self-directed with support from peers
-- **24/7 access**: Campuses are open around the clock
-- **Real-world skills**: Projects simulate professional software development challenges
+A custom implementation of the ICMP ping utility, written in C as part of the 42 Berlin advanced curriculum.
 
 The `ft_ping` project is part of the advanced network programming track, requiring students to implement low-level network protocols using raw sockets, handle ICMP packets, and replicate the behavior of the standard Unix `ping` utility.
 
@@ -36,6 +25,7 @@ The `ft_ping` project is part of the advanced network programming track, requiri
 - GCC compiler
 - Root privileges (required for raw ICMP sockets)
 - Math library (`-lm`)
+- `bc` for Makefile progress counter
 
 ## Installation
 
@@ -86,12 +76,12 @@ sudo ./ft_ping -f 8.8.8.8        # Flood mode (requires root)
 |------|-------------|
 | `-c <count>` | Stop after sending `count` packets |
 | `-i <interval>` | Wait `interval` seconds between packets (default: 1) |
-| `-w <timeout>` | Time to wait for response in seconds (default: 10) |
-| `--ttl <ttl>` | Set Time To Live (default: 64) |
+| `-w <timeout>` | Time to wait for response in seconds |
+| `--ttl <ttl>` | Set Time To Live |
 | `-v` | Verbose output with packet dumps |
 | `-q` | Quiet mode (no per-packet output) |
-| `-f` | Flood mode - send packets as fast as possible (requires root) |
-| `-l <preload>` | Send preload packets as fast as possible before going into normal mode (requires root) |
+| `-f` | Flood mode - send packets as fast as possible |
+| `-l <preload>` | Send preload packets as fast as possible before going into normal mode |
 | `-V` | Display version information |
 | `-?`, `--help` | Display help message |
 | `--usage` | Display brief usage information |
@@ -118,7 +108,7 @@ bitmap.c           - Duplicate packet detection using bitmasks
 - **Raw ICMP sockets**: Requires root privileges for packet construction
 - **Kernel timestamps**: Uses `SO_TIMESTAMP` socket option for accurate RTT measurement
 - **DNS resolution**: IPv4-only via `getaddrinfo()`, uses first result
-- **Packet filtering**: Validates ICMP ID (matches PID) and sequence numbers
+- **Packet filtering**: Validates ICMP ID (matches PID)
 - **Statistics**: Real-time min/avg/max/stddev calculation using Welford's algorithm
 - **Duplicate detection**: Efficient bitmap tracking of received sequences
 - **Exit on error pattern**: Initialization functions exit directly on fatal errors
@@ -143,15 +133,6 @@ From 192.168.1.1: Destination Host Unreachable
 From 192.168.1.1: Time to live exceeded
 ```
 
-## Testing
-
-Comprehensive testing guide available in [TESTING_GUIDE.md](TESTING_GUIDE.md), including:
-- Basic connectivity tests (localhost, public DNS)
-- Timeout scenarios (non-routable IPs)
-- ICMP error simulation
-- Network simulation (packet loss, latency, jitter using `tc netem`)
-- Packet capture verification (tcpdump, Wireshark)
-
 Quick sanity checks:
 ```bash
 sudo ./ft_ping 127.0.0.1    # Should succeed with <1ms RTT
@@ -171,8 +152,7 @@ Key behavioral traits:
 
 ## Technical Documentation
 
-- **TESTING_GUIDE.md**: Comprehensive test scenarios and expected outputs
-- **DEPENDENCIES.md**: System dependencies and setup instructions
+- **DEPENDENCIES.md**: System dependencies and setup instructions. To be evaluated at 42, the project is run in a virtual machine running Debian >= 7.0
 
 ## Compilation Flags
 
@@ -192,7 +172,6 @@ ft_ping/
 ├── sandbox/             # Testing and experimentation
 ├── Makefile             # Build configuration
 ├── README.md            # This file
-├── TESTING_GUIDE.md     # Testing scenarios
 ├── DEPENDENCIES.md      # System dependencies
 └── en.subject.ft_ping.pdf  # 42 project subject
 ```
@@ -210,6 +189,17 @@ ft_ping/
 ## License
 
 This project is part of the 42 School curriculum and follows 42's academic policies.
+
+## About 42 School
+
+[42](https://[https://42berlin.de/]) is a global network of tuition-free, peer-to-peer coding schools with a unique pedagogy that emphasizes project-based learning without teachers or traditional lectures. Students (called "cadets") progress through increasingly complex projects at their own pace, learning through hands-on practice and collaboration with peers.
+
+Key characteristics of 42:
+- **Project-based learning**: All learning happens through practical coding projects
+- **Peer evaluation**: Students review and grade each other's work
+- **No teachers**: Learning is self-directed with support from peers
+- **24/7 access**: Campuses are open around the clock
+- **Real-world skills**: Projects simulate professional software development challenges
 
 ## Acknowledgments
 
