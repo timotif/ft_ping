@@ -12,3 +12,4 @@ libexec/
 share/
 *.txt
 obj/
+sandbox/
